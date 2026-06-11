@@ -1,0 +1,58 @@
+# Python cache
+
+**pycache**/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+
+venv/
+env/
+ENV/
+
+# Environment Variables
+
+.env
+.env.local
+
+# Database
+
+instance/
+*.db
+*.sqlite3
+
+# Flask
+
+.flaskenv
+
+# IDE files
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+
+.DS_Store
+Thumbs.db
+
+# Logs
+
+*.log
+
+# Python build files
+
+build/
+dist/
+*.egg-info/
+
+# Testing
+
+.pytest_cache/
+.coverage
+
+# Temporary files
+
+*.tmp
+*.temp

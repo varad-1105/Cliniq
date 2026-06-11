@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Receptionist Dashboard - ClinIQ</title>
+</head>
+<body>
+    <h1>Receptionist Dashboard</h1>
+    <p>Welcome, {{ current_user.name }}.</p>
+    <p>This area is available only to receptionists.</p>
+    <a href="{{ url_for('auth.logout') }}">Logout</a>
+</body>
+</html>
