@@ -2,8 +2,6 @@
 
 ClinIQ is a Flask-based clinic queue and appointment management MVP. It helps small clinics reduce waiting-room confusion with online booking, receptionist approval, FIFO token generation, doctor workflow tools, queue tracking, clinic status updates, and simulated notification logs.
 
-## Resume-Friendly Summary
-
 Built a full-stack healthcare operations MVP using Flask, SQLite, SQLAlchemy, Flask-Login, server-rendered HTML, and responsive CSS. Implemented role-based dashboards, appointment booking, FIFO queue tokens, consultation notes, clinic status management, and simulated notification logging with deployment-ready configuration.
 
 ## Features
