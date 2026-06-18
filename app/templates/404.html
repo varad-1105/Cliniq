@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Page Not Found - ClinIQ{% endblock %}
+
+{% block content %}
+    <div class="narrow-page">
+        <p class="eyebrow">404</p>
+        <h1 class="page-title">Page not found</h1>
+        <p class="page-subtitle">The page you are looking for may have moved or the link may be incorrect.</p>
+        <div class="actions">
+            <a class="button" href="{{ url_for('home') }}">Go Home</a>
+            <a class="button button-light" href="{{ url_for('patient.book_appointment') }}">Book Appointment</a>
+        </div>
+    </div>
+{% endblock %}

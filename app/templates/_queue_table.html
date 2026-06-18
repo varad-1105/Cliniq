@@ -1,0 +1,31 @@
+{% if queue.active_queue %}
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Token</th>
+                    <th>Patient</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appointment in queue.active_queue %}
+                    <tr>
+                        <td><strong class="queue-number" style="font-size: var(--text-xl);">{{ appointment.token_number }}</strong></td>
+                        <td>{{ appointment.patient_name }}</td>
+                        <td>{{ appointment.phone_number }}</td>
+                        <td><span class="badge badge-waiting">{{ appointment.status.replace("_", " ") }}</span></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="card">
+        <div class="card-body text-center">
+            <h3>No patients in queue</h3>
+            <p>No patients are currently waiting.</p>
+        </div>
+    </div>
+{% endif %}

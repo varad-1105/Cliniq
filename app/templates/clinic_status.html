@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Clinic Status - ClinIQ{% endblock %}
+
+{% block content %}
+<section class="dash-page">
+    <div class="container">
+        <header class="dash-header">
+            <p class="eyebrow">Clinic Status</p>
+            <h1 class="dash-title">Clinic Availability</h1>
+            <p class="dash-subtitle">Switch between open, closed, and emergency mode for patients and staff.</p>
+        </header>
+
+        {% include "_clinic_status_banner.html" %}
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Status Controls</h3>
+                <span class="badge badge-done">Doctor only</span>
+            </div>
+            <div class="card-body status-toggle-group">
+                <form method="POST" action="{{ url_for('dashboard.set_clinic_status', status_value='open') }}">
+                    <button type="submit" class="status-btn selected-open">Open Clinic</button>
+                </form>
+                <form method="POST" action="{{ url_for('dashboard.set_clinic_status', status_value='closed') }}">
+                    <button type="submit" class="status-btn selected-closed">Close Clinic</button>
+                </form>
+                <form method="POST" action="{{ url_for('dashboard.set_clinic_status', status_value='emergency') }}">
+                    <button type="submit" class="status-btn selected-busy">Emergency Mode</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

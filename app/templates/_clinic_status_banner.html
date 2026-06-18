@@ -1,0 +1,23 @@
+{% set badge_class = "badge-open" if clinic_status.status == "open" else ("badge-closed" if clinic_status.status == "closed" else "badge-busy") %}
+
+<div class="card" style="margin-bottom: var(--sp-6);">
+    <div class="card-body flex flex-wrap items-center justify-between gap-4">
+        <div>
+            <p class="stat-card-label">Clinic Status</p>
+            <h3 style="margin-bottom: var(--sp-1);">
+                {% if clinic_status.status == "open" %}
+                    Clinic Open
+                {% elif clinic_status.status == "closed" %}
+                    Clinic Closed
+                {% else %}
+                    Emergency Mode
+                {% endif %}
+            </h3>
+            <p>{{ clinic_status.message }}</p>
+        </div>
+        <span class="badge {{ badge_class }}">
+            <span class="badge-dot"></span>
+            {{ clinic_status.status }}
+        </span>
+    </div>
+</div>

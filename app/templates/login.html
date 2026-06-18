@@ -1,31 +1,35 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>ClinIQ Login</title>
-</head>
-<body>
+{% extends "base.html" %}
 
-    <h1>ClinIQ Login</h1>
+{% block title %}Login - ClinIQ{% endblock %}
+{% block body_class %}auth-body{% endblock %}
 
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            {% for message in messages %}
-                <p>{{ message }}</p>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+{% block content %}
+<section class="auth-page">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <span class="brand-mark">+</span>
+            <span class="brand-name">ClinIQ</span>
+        </div>
 
-    <form method="POST">
+        <h1 class="auth-title">Staff Login</h1>
+        <p class="auth-subtitle">Simple access for doctors and receptionists to manage clinic work.</p>
 
-        <label>Email:</label><br>
-        <input type="email" name="email" required><br><br>
+        <form method="POST" class="form-stack">
+            <div class="form-group">
+                <label class="form-label" for="email">Email address</label>
+                <input class="form-control" id="email" type="email" name="email" autocomplete="email" placeholder="doctor@cliniq.com" required>
+            </div>
 
-        <label>Password:</label><br>
-        <input type="password" name="password" required><br><br>
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <input class="form-control" id="password" type="password" name="password" autocomplete="current-password" placeholder="Enter password" required>
+            </div>
 
-        <button type="submit">Login</button>
-
-    </form>
-
-</body>
-</html>
+            <div class="flex flex-wrap gap-3">
+                <button class="btn btn-primary btn-block" type="submit">Login</button>
+                <a class="btn btn-outline btn-block" href="{{ url_for('patient.book_appointment') }}">Book as Patient</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

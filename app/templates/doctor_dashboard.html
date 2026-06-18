@@ -1,12 +1,122 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Doctor Dashboard - ClinIQ</title>
-</head>
-<body>
-    <h1>Doctor Dashboard</h1>
-    <p>Welcome, {{ current_user.name }}.</p>
-    <p>This area is available only to doctors.</p>
-    <a href="{{ url_for('auth.logout') }}">Logout</a>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Doctor Dashboard - ClinIQ{% endblock %}
+
+{% block content %}
+<section class="dash-page">
+    <div class="container">
+        <header class="dash-header">
+            <p class="eyebrow">Doctor Workspace</p>
+            <h1 class="dash-title">Doctor Dashboard</h1>
+            <p class="dash-subtitle">Start consultations, save notes, and monitor the live queue from one screen.</p>
+        </header>
+
+        <div class="dash-grid">
+            <div class="stat-card"><div class="stat-card-icon">●</div><div class="stat-card-value">{{ stats.total_today }}</div><div class="stat-card-label">Total Today</div></div>
+            <div class="stat-card"><div class="stat-card-icon">○</div><div class="stat-card-value">{{ stats.pending }}</div><div class="stat-card-label">Pending</div></div>
+            <div class="stat-card"><div class="stat-card-icon">▶</div><div class="stat-card-value">{{ stats.in_consultation }}</div><div class="stat-card-label">In Consultation</div></div>
+            <div class="stat-card"><div class="stat-card-icon">✓</div><div class="stat-card-value">{{ stats.completed }}</div><div class="stat-card-label">Completed</div></div>
+        </div>
+
+        {% include "_clinic_status_banner.html" %}
+
+        <section class="card" id="clinic-status" style="margin-bottom: var(--sp-8);">
+            <div class="card-header">
+                <h3>Clinic Status Control</h3>
+                <span class="badge badge-done">Doctor only</span>
+            </div>
+            <div class="card-body status-toggle-group">
+                <form method="POST" action="{{ url_for('dashboard.set_clinic_status', status_value='open') }}">
+                    <button type="submit" class="status-btn selected-open">Open Clinic</button>
+                </form>
+                <form method="POST" action="{{ url_for('dashboard.set_clinic_status', status_value='closed') }}">
+                    <button type="submit" class="status-btn selected-closed">Close Clinic</button>
+                </form>
+                <form method="POST" action="{{ url_for('dashboard.set_clinic_status', status_value='emergency') }}">
+                    <button type="submit" class="status-btn selected-busy">Emergency Mode</button>
+                </form>
+            </div>
+        </section>
+
+        <div class="section-head">
+            <h2>Current Patient</h2>
+            <a class="btn btn-outline btn-sm" href="{{ url_for('dashboard.doctor_queue') }}">View Full Queue</a>
+        </div>
+        {% include "_doctor_queue_controls.html" %}
+
+        <section class="section" style="padding-bottom:0;">
+            <div class="section-head">
+                <h2>Upcoming Queue</h2>
+                <span class="badge badge-upcoming">{{ upcoming_queue|length }} next</span>
+            </div>
+
+            {% if upcoming_queue %}
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead><tr><th>Token</th><th>Name</th><th>Status</th><th>ETA</th></tr></thead>
+                        <tbody>
+                            {% for row in upcoming_queue %}
+                                <tr>
+                                    <td><strong>{{ row.appointment.token_number }}</strong></td>
+                                    <td>{{ row.appointment.patient_name }}</td>
+                                    <td><span class="badge badge-waiting">{{ row.appointment.status.replace("_", " ") }}</span></td>
+                                    <td>{{ row.eta_minutes }} mins</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="card"><div class="card-body text-center"><h3>No patients in queue</h3><p>No approved patients are waiting.</p></div></div>
+            {% endif %}
+        </section>
+
+        <section class="section" style="padding-bottom:0;">
+            <div class="card">
+                <div class="card-header"><h3>Search Patients</h3></div>
+                <div class="card-body">
+                    <form method="GET" action="{{ url_for('dashboard.doctor_dashboard') }}" class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="search">Name or Phone</label>
+                            <input class="form-control" id="search" type="text" name="search" value="{{ search }}" placeholder="Search patient">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="status">Status</label>
+                            <select class="form-control" id="status" name="status">
+                                <option value="" {% if not status_filter %}selected{% endif %}>All statuses</option>
+                                <option value="pending" {% if status_filter == "pending" %}selected{% endif %}>Pending</option>
+                                <option value="in_consultation" {% if status_filter == "in_consultation" %}selected{% endif %}>In consultation</option>
+                                <option value="completed" {% if status_filter == "completed" %}selected{% endif %}>Completed</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-3 items-center">
+                            <button class="btn btn-primary" type="submit">Search</button>
+                            <a class="btn btn-ghost" href="{{ url_for('dashboard.doctor_dashboard') }}">Clear</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if search_results %}
+                <div class="table-wrapper" style="margin-top: var(--sp-5);">
+                    <table class="table">
+                        <thead><tr><th>Patient</th><th>Phone</th><th>Status</th><th>Token</th></tr></thead>
+                        <tbody>
+                            {% for appointment in search_results %}
+                                <tr>
+                                    <td>{{ appointment.patient_name }}</td>
+                                    <td>{{ appointment.phone_number }}</td>
+                                    <td><span class="badge badge-waiting">{{ appointment.status.replace("_", " ") }}</span></td>
+                                    <td>{{ appointment.token_number or "Not assigned" }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% elif search or status_filter %}
+                <div class="card" style="margin-top: var(--sp-5);"><div class="card-body text-center">No patients found.</div></div>
+            {% endif %}
+        </section>
+    </div>
+</section>
+{% endblock %}

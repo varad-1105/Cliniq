@@ -1,0 +1,63 @@
+<section class="section" style="padding-bottom: 0;">
+    <div class="section-head">
+        <h2>{{ title }}</h2>
+        <span class="badge badge-done">{{ appointments|length }}</span>
+    </div>
+
+    {% if appointments %}
+        <div class="feature-grid">
+            {% for appointment in appointments %}
+                <article class="card">
+                    <div class="card-body">
+                        <div class="flex flex-wrap justify-between gap-3">
+                            <div>
+                                <h3>{{ appointment.patient_name }}</h3>
+                                <p>{{ appointment.reason_for_visit }}</p>
+                            </div>
+                            <span class="badge badge-waiting">{{ appointment.status.replace("_", " ") }}</span>
+                        </div>
+
+                        <div class="confirm-details">
+                            {% if appointment.token_number %}
+                                <div class="detail-row">
+                                    <span class="detail-label">Token</span>
+                                    <span class="detail-value">{{ appointment.token_number }}</span>
+                                </div>
+                            {% endif %}
+                            <div class="detail-row">
+                                <span class="detail-label">Phone</span>
+                                <span class="detail-value">{{ appointment.phone_number }}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Date</span>
+                                <span class="detail-value">{{ appointment.preferred_date.strftime("%Y-%m-%d") }}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Time</span>
+                                <span class="detail-value">{{ appointment.preferred_time.strftime("%I:%M %p") }}</span>
+                            </div>
+                        </div>
+
+                        {% if show_actions and appointment.status == "pending" %}
+                            <div class="flex flex-wrap gap-3">
+                                <form method="POST" action="{{ url_for('dashboard.approve_appointment', appointment_id=appointment.id) }}">
+                                    <button class="btn btn-success" type="submit">Approve</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('dashboard.reject_appointment', appointment_id=appointment.id) }}">
+                                    <button class="btn btn-danger" type="submit">Reject</button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card">
+            <div class="card-body text-center">
+                <h3>No appointments yet</h3>
+                <p>{{ empty_message }}</p>
+            </div>
+        </div>
+    {% endif %}
+</section>

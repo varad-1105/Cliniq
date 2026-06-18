@@ -1,0 +1,50 @@
+{% set current_details = current_patient_details if current_patient_details is defined else none %}
+
+<div class="card">
+    <div class="card-body">
+        <div class="flex flex-wrap items-center justify-between gap-6">
+            <div>
+                <p class="stat-card-label">Current Patient</p>
+                {% if queue.current_patient %}
+                    <h2>{{ queue.current_patient.patient_name }}</h2>
+                    <div class="queue-now-number" style="font-size: 3.5rem;">{{ queue.current_patient.token_number }}</div>
+                    <p>{{ queue.current_patient.reason_for_visit }}</p>
+                    <span class="badge badge-called">Being seen now</span>
+                {% else %}
+                    <h2>No consultation in progress</h2>
+                    {% if queue.next_patient %}
+                        <p>Next patient: {{ queue.next_patient.patient_name }} ({{ queue.next_patient.token_number }})</p>
+                    {% else %}
+                        <p>No approved patients are waiting.</p>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <form method="POST" action="{{ url_for('dashboard.start_consultation') }}">
+                <button class="btn btn-primary btn-lg" type="submit" {% if queue.current_patient or not queue.next_patient %}disabled{% endif %}>
+                    Start Consultation
+                </button>
+            </form>
+        </div>
+
+        {% if queue.current_patient %}
+            <div class="divider"></div>
+            <form method="POST" action="{{ url_for('dashboard.save_notes', appointment_id=queue.current_patient.id) }}" class="form-stack">
+                <div class="form-group">
+                    <label class="form-label" for="consultation_notes">Consultation Notes</label>
+                    <textarea class="form-control" id="consultation_notes" name="consultation_notes" rows="5" placeholder="Write diagnosis, advice, prescription notes, or follow-up instructions.">{{ queue.current_patient.consultation_notes or "" }}</textarea>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <button class="btn btn-outline" type="submit">Save Notes</button>
+                    <button
+                        type="submit"
+                        class="btn btn-success"
+                        formaction="{{ url_for('dashboard.complete_consultation') }}"
+                    >
+                        Complete Consultation
+                    </button>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+</div>

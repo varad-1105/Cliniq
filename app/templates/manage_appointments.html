@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Appointments - ClinIQ{% endblock %}
+
+{% block content %}
+<section class="dash-page">
+    <div class="container">
+        <header class="dash-header">
+            <p class="eyebrow">Front Desk</p>
+            <h1 class="dash-title">Manage Appointments</h1>
+            <p class="dash-subtitle">Approve requests, reject unavailable slots, and keep the queue clean.</p>
+        </header>
+
+        <div class="flex flex-wrap gap-3" style="margin-bottom: var(--sp-8);">
+            <a class="btn btn-primary" href="{{ url_for('dashboard.add_walk_in') }}">Add Walk-in</a>
+            <a class="btn btn-outline" href="{{ url_for('dashboard.receptionist_dashboard') }}">Dashboard</a>
+        </div>
+
+        {% with title="Pending Appointments", appointments=appointments.pending, show_actions=True, empty_message="No pending appointments to manage." %}
+            {% include "_appointment_section.html" %}
+        {% endwith %}
+
+        {% with title="Approved Appointments", appointments=appointments.approved, show_actions=False, empty_message="No approved appointments yet." %}
+            {% include "_appointment_section.html" %}
+        {% endwith %}
+
+        {% with title="Rejected Appointments", appointments=appointments.rejected, show_actions=False, empty_message="No rejected appointments." %}
+            {% include "_appointment_section.html" %}
+        {% endwith %}
+    </div>
+</section>
+{% endblock %}

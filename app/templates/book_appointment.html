@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Book Appointment - ClinIQ{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-narrow">
+        {% include "_clinic_status_banner.html" %}
+
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <p class="eyebrow">Patient Booking</p>
+                    <h1>Book an Appointment</h1>
+                    <p class="text-muted">
+                        {% if clinic_status.status == "closed" %}
+                            Clinic is currently closed.
+                        {% else %}
+                            Choose your preferred visit time. The reception desk will confirm your request.
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <form method="POST" class="card-body form-stack">
+                <div class="form-group">
+                    <label class="form-label" for="patient_name">Patient Name</label>
+                    <input
+                class="form-control"
+                id="patient_name"
+                type="text"
+                name="patient_name"
+                value="{{ form.patient_name if form else '' }}"
+                {% if clinic_status.status == "closed" %}disabled{% endif %}
+                required
+            >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="phone_number">Phone Number</label>
+                    <input
+                class="form-control"
+                id="phone_number"
+                type="tel"
+                name="phone_number"
+                value="{{ form.phone_number if form else '' }}"
+                {% if clinic_status.status == "closed" %}disabled{% endif %}
+                required
+            >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="reason_for_visit">Reason for Visit</label>
+                    <textarea class="form-control" id="reason_for_visit" name="reason_for_visit" rows="4" {% if clinic_status.status == "closed" %}disabled{% endif %} required>{{ form.reason_for_visit if form else '' }}</textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="preferred_date">Preferred Date</label>
+                        <input
+                class="form-control"
+                id="preferred_date"
+                type="date"
+                name="preferred_date"
+                value="{{ form.preferred_date if form else '' }}"
+                {% if clinic_status.status == "closed" %}disabled{% endif %}
+                required
+            >
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Preferred Time</label>
+                        <div class="time-picker">
+                            <div>
+                    <label class="sr-only" for="preferred_hour">Hour</label>
+                    <select class="form-control" id="preferred_hour" name="preferred_hour" {% if clinic_status.status == "closed" %}disabled{% endif %} required>
+                        <option value="">Hour</option>
+                        {% for hour in range(1, 13) %}
+                            {% set hour_value = "%02d"|format(hour) %}
+                            <option value="{{ hour_value }}" {% if form and form.preferred_hour == hour_value %}selected{% endif %}>{{ hour_value }}</option>
+                        {% endfor %}
+                    </select>
+                            </div>
+
+                            <div>
+                    <label class="sr-only" for="preferred_minute">Minute</label>
+                    <select class="form-control" id="preferred_minute" name="preferred_minute" {% if clinic_status.status == "closed" %}disabled{% endif %} required>
+                        <option value="">Minute</option>
+                        {% for minute in ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"] %}
+                            <option value="{{ minute }}" {% if form and form.preferred_minute == minute %}selected{% endif %}>{{ minute }}</option>
+                        {% endfor %}
+                    </select>
+                            </div>
+
+                            <div>
+                    <label class="sr-only" for="preferred_period">AM or PM</label>
+                    <select class="form-control" id="preferred_period" name="preferred_period" {% if clinic_status.status == "closed" %}disabled{% endif %} required>
+                        <option value="">AM/PM</option>
+                        <option value="AM" {% if form and form.preferred_period == "AM" %}selected{% endif %}>AM</option>
+                        <option value="PM" {% if form and form.preferred_period == "PM" %}selected{% endif %}>PM</option>
+                    </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+        <div class="flex flex-wrap gap-3">
+            <button class="btn btn-primary" type="submit" {% if clinic_status.status == "closed" %}disabled{% endif %}>Submit Booking</button>
+            {% if clinic_status.status == "closed" %}
+                <a class="btn btn-outline" href="{{ url_for('patient.queue_tracker') }}">Track Queue</a>
+            {% endif %}
+        </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

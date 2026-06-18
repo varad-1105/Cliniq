@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Receptionist Queue - ClinIQ{% endblock %}
+
+{% block content %}
+<section class="dash-page">
+    <div class="container">
+        <header class="dash-header">
+            <p class="eyebrow">Reception Queue</p>
+            <h1 class="dash-title">Clinic Queue</h1>
+            <p class="dash-subtitle">Track today’s tokens and add walk-ins without leaving the front desk.</p>
+        </header>
+
+        <div class="dash-grid">
+            <div class="stat-card"><div class="stat-card-icon">▶</div><div class="stat-card-value">{{ queue.current_serving_token }}</div><div class="stat-card-label">Currently Serving</div></div>
+            <div class="stat-card"><div class="stat-card-icon">#</div><div class="stat-card-value">{{ queue.waiting_count }}</div><div class="stat-card-label">Waiting</div></div>
+            <div class="stat-card"><div class="stat-card-icon">✓</div><div class="stat-card-value">{{ queue.completed_today|length }}</div><div class="stat-card-label">Completed Today</div></div>
+        </div>
+
+        <div class="flex flex-wrap gap-3" style="margin-bottom: var(--sp-8);">
+            <a class="btn btn-primary" href="{{ url_for('dashboard.add_walk_in') }}">Add Walk-in</a>
+            <a class="btn btn-outline" href="{{ url_for('dashboard.manage_appointments') }}">Manage Appointments</a>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>Current Queue</h3>
+                <span class="badge badge-called">{{ queue.active_queue|length }} active</span>
+            </div>
+            <div class="card-body">
+                {% include "_queue_table.html" %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

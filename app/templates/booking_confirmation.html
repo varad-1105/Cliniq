@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Booking Confirmed - ClinIQ{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-narrow">
+        <div class="confirm-card">
+            <div class="confirm-icon">✓</div>
+            <p class="eyebrow">Booking Submitted</p>
+            <h1>Booking Request Received</h1>
+            <p>Thank you, {{ appointment.patient_name }}. Your appointment is waiting for clinic approval.</p>
+
+            <div class="confirm-details">
+                <div class="detail-row">
+                    <span class="detail-label">Phone</span>
+                    <span class="detail-value">{{ appointment.phone_number }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Reason</span>
+                    <span class="detail-value">{{ appointment.reason_for_visit }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Preferred Date</span>
+                    <span class="detail-value">{{ appointment.preferred_date.strftime("%Y-%m-%d") }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Preferred Time</span>
+                    <span class="detail-value">{{ appointment.preferred_time.strftime("%I:%M %p") }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status</span>
+                    <span class="badge badge-waiting">{{ appointment.status }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Token</span>
+                    <span class="detail-value">{{ appointment.token_number or "Assigned after approval" }}</span>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-3" style="justify-content:center;">
+                <a class="btn btn-primary" href="{{ url_for('patient.queue_tracker') }}">Track Queue</a>
+                <a class="btn btn-outline" href="{{ url_for('patient.book_appointment') }}">Book Another</a>
+                <a class="btn btn-ghost" href="{{ url_for('home') }}">Home</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

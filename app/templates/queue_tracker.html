@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Queue Tracker - ClinIQ{% endblock %}
+
+{% block content %}
+<section class="queue-tracker-hero">
+    <div class="container">
+        <h1>Track Your Queue</h1>
+        <p>Enter your phone number to view appointment status, token, and estimated waiting time.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container-narrow">
+        {% include "_clinic_status_banner.html" %}
+
+        <div class="card" style="margin-bottom: var(--sp-8);">
+            <form method="POST" class="card-body form-stack">
+                <div class="form-group">
+                    <label class="form-label" for="phone_number">Phone Number</label>
+                    <input
+                        class="form-control"
+                        id="phone_number"
+                        type="tel"
+                        name="phone_number"
+                        value="{{ searched_phone }}"
+                        placeholder="Enter registered phone number"
+                        required
+                    >
+                </div>
+                <button class="btn btn-primary btn-block" type="submit">Check Queue</button>
+            </form>
+        </div>
+
+        {% if queue_status %}
+            {% set appointment = queue_status.appointment %}
+            <div class="queue-now">
+                <div class="queue-now-label">Your Token</div>
+                <div class="queue-now-number">{{ appointment.token_number or "—" }}</div>
+                <div class="queue-now-name">{{ appointment.patient_name }}</div>
+                <div class="queue-now-wait">{{ queue_status.people_ahead }} people ahead • {{ queue_status.eta_minutes }} mins estimated wait</div>
+            </div>
+
+            <div class="grid-3" style="margin-bottom: var(--sp-8);">
+                <div class="stat-card">
+                    <div class="stat-card-label">Currently Serving</div>
+                    <div class="stat-card-value">{{ queue_status.current_serving_token }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-label">People Ahead</div>
+                    <div class="stat-card-value">{{ queue_status.people_ahead }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-label">Estimated Wait</div>
+                    <div class="stat-card-value">{{ queue_status.eta_minutes }}m</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Appointment Status</h3>
+                    <span class="badge badge-waiting">{{ appointment.status.replace("_", " ") }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="confirm-details" style="margin:0;">
+                        <div class="detail-row">
+                            <span class="detail-label">Reason</span>
+                            <span class="detail-value">{{ appointment.reason_for_visit }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Preferred Time</span>
+                            <span class="detail-value">{{ appointment.preferred_time.strftime("%I:%M %p") }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <section class="section" style="padding-bottom:0;">
+                <div class="section-head">
+                    <h2>Recent Updates</h2>
+                    <span class="badge badge-done">{{ notifications|length }} updates</span>
+                </div>
+                {% if notifications %}
+                    <div class="feature-grid">
+                        {% for notification in notifications %}
+                            <article class="card">
+                                <div class="card-body">
+                                    <h4>{{ notification.notification_type.replace("_", " ") }}</h4>
+                                    <p>{{ notification.message }}</p>
+                                    <span class="badge badge-done">{{ notification.status }}</span>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="card"><div class="card-body text-muted">No updates have been sent for this phone number yet.</div></div>
+                {% endif %}
+            </section>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

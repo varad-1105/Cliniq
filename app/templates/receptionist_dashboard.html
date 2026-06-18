@@ -1,12 +1,76 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Receptionist Dashboard - ClinIQ</title>
-</head>
-<body>
-    <h1>Receptionist Dashboard</h1>
-    <p>Welcome, {{ current_user.name }}.</p>
-    <p>This area is available only to receptionists.</p>
-    <a href="{{ url_for('auth.logout') }}">Logout</a>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Receptionist Dashboard - ClinIQ{% endblock %}
+
+{% block content %}
+<section class="dash-page">
+    <div class="container">
+        <header class="dash-header">
+            <p class="eyebrow">Reception Desk</p>
+            <h1 class="dash-title">Receptionist Dashboard</h1>
+            <p class="dash-subtitle">Manage bookings, walk-ins, notifications, and the live queue.</p>
+        </header>
+
+        {% include "_clinic_status_banner.html" %}
+
+        <div class="dash-grid">
+            <div class="stat-card"><div class="stat-card-icon">○</div><div class="stat-card-value">{{ appointments.pending|length }}</div><div class="stat-card-label">Pending</div></div>
+            <div class="stat-card"><div class="stat-card-icon">✓</div><div class="stat-card-value">{{ appointments.approved|length }}</div><div class="stat-card-label">Approved</div></div>
+            <div class="stat-card"><div class="stat-card-icon">×</div><div class="stat-card-value">{{ appointments.rejected|length }}</div><div class="stat-card-label">Rejected</div></div>
+            <div class="stat-card"><div class="stat-card-icon">#</div><div class="stat-card-value">{{ queue.waiting_count }}</div><div class="stat-card-label">Waiting</div></div>
+        </div>
+
+        <div class="flex flex-wrap gap-3" style="margin-bottom: var(--sp-8);">
+            <a class="btn btn-primary" href="{{ url_for('dashboard.add_walk_in') }}">Add Walk-in</a>
+            <a class="btn btn-outline" href="{{ url_for('dashboard.manage_appointments') }}">Manage Appointments</a>
+            <a class="btn btn-ghost" href="{{ url_for('dashboard.receptionist_queue') }}">View Queue</a>
+        </div>
+
+        <section class="card" style="margin-bottom: var(--sp-8);">
+            <div class="card-header">
+                <h3>Notification Status</h3>
+                <span class="badge badge-done">{{ notifications.total }} sent</span>
+            </div>
+            <div class="card-body">
+                {% if notifications.recent %}
+                    <div class="feature-grid">
+                        {% for notification in notifications.recent %}
+                            <article class="card">
+                                <div class="card-body">
+                                    <h4>{{ notification.patient_name }}</h4>
+                                    <p>{{ notification.message }}</p>
+                                    <span class="badge badge-done">{{ notification.notification_type.replace("_", " ") }}</span>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No simulated notifications have been logged yet.</p>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-header">
+                <h3>Current Queue</h3>
+                <span class="badge badge-called">Serving {{ queue.current_serving_token }}</span>
+            </div>
+            <div class="card-body">
+                {% include "_queue_table.html" %}
+            </div>
+        </section>
+
+        {% with title="Pending Appointments", appointments=appointments.pending, show_actions=True, empty_message="No pending appointments right now." %}
+            {% include "_appointment_section.html" %}
+        {% endwith %}
+
+        {% with title="Approved Appointments", appointments=appointments.approved, show_actions=False, empty_message="No approved appointments yet." %}
+            {% include "_appointment_section.html" %}
+        {% endwith %}
+
+        {% with title="Rejected Appointments", appointments=appointments.rejected, show_actions=False, empty_message="No rejected appointments." %}
+            {% include "_appointment_section.html" %}
+        {% endwith %}
+    </div>
+</section>
+{% endblock %}

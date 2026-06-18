@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}ClinIQ - Smart Clinic Queue{% endblock %}
+
+{% block content %}
+    <div class="home-layout">
+        <div class="home-hero">
+            <p class="eyebrow">Smart queue care for everyday clinics</p>
+            <h1 class="page-title">Book visits, track your token, and reduce waiting room confusion.</h1>
+            <p class="page-subtitle">ClinIQ helps patients and clinic staff manage appointments, walk-ins, and live queue updates from one simple screen.</p>
+
+            <div class="actions">
+                <a class="button" href="{{ url_for('patient.book_appointment') }}">Book Appointment</a>
+                <a class="button button-light" href="{{ url_for('patient.queue_tracker') }}">Track Queue</a>
+                <a class="button button-light" href="{{ url_for('auth.login') }}">Staff Login</a>
+            </div>
+        </div>
+
+        <aside>
+            {% include "_clinic_status_banner.html" %}
+            <div class="feature-card">
+                <strong>Designed for busy clinics</strong>
+                <p>Simple tokens, clear status, and readable screens for patients of all ages.</p>
+            </div>
+        </aside>
+    </div>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Queue - ClinIQ{% endblock %}
+
+{% block content %}
+<section class="dash-page">
+    <div class="container">
+        <header class="dash-header">
+            <p class="eyebrow">Doctor Queue</p>
+            <h1 class="dash-title">Consultation Queue</h1>
+            <p class="dash-subtitle">Call the next patient, complete consultations, and keep the queue moving.</p>
+        </header>
+
+        {% include "_doctor_queue_controls.html" %}
+
+        <section class="section" style="padding-bottom:0;">
+            <div class="section-head">
+                <h2>Next Patients</h2>
+                <a class="btn btn-outline btn-sm" href="{{ url_for('dashboard.doctor_dashboard') }}">Dashboard</a>
+            </div>
+            {% include "_queue_table.html" %}
+        </section>
+    </div>
+</section>
+{% endblock %}
