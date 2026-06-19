@@ -10,6 +10,24 @@ from app.routes.dashboard import dashboard
 from app.routes.patient import patient
 
 
+def ensure_demo_users():
+    demo_users = (
+        ("Admin Doctor", "doctor@cliniq.com", "123456", "doctor"),
+        ("Front Desk", "receptionist@cliniq.com", "123456", "receptionist"),
+    )
+    users_created = False
+
+    for name, email, password, role in demo_users:
+        if User.query.filter_by(email=email).first() is None:
+            user = User(name=name, email=email, role=role)
+            user.set_password(password)
+            db.session.add(user)
+            users_created = True
+
+    if users_created:
+        db.session.commit()
+
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
@@ -49,5 +67,6 @@ def create_app():
         from app.services.clinic_status_service import ensure_default_clinic_status
 
         ensure_default_clinic_status()
+        ensure_demo_users()
 
     return app
