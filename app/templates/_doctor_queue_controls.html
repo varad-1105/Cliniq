@@ -49,24 +49,116 @@
             <div class="divider"></div>
             <section>
                 <div class="section-head">
-                    <h3>Create Prescription</h3>
+                    <div>
+                        <h3>Create Prescription</h3>
+                        <p class="text-muted" style="margin: 4px 0 0;">Structured prescription with dosage timing, patient context, and follow-up plan.</p>
+                    </div>
                     {% if queue.current_patient.prescription %}
-                        <a class="btn btn-outline btn-sm" href="{{ url_for('patient.download_prescription', prescription_id=queue.current_patient.prescription.id) }}" target="_blank" rel="noopener">View Existing</a>
+                        <a class="btn btn-outline btn-sm" href="{{ url_for('patient.download_prescription', prescription_id=queue.current_patient.prescription.id) }}" target="_blank" rel="noopener">View PDF</a>
                     {% endif %}
                 </div>
-                <form method="POST" action="{{ url_for('dashboard.generate_prescription', appointment_id=queue.current_patient.id) }}" class="form-stack">
+                {% set prescription = queue.current_patient.prescription %}
+                {% set medicine_rows = prescription.medicine_rows if prescription else [] %}
+                <form method="POST" action="{{ url_for('dashboard.generate_prescription', appointment_id=queue.current_patient.id) }}" class="form-stack prescription-form" data-prescription-form>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="patient_age">Patient Age</label>
+                            <input class="form-control" id="patient_age" name="patient_age" type="text" value="{{ prescription.patient_age if prescription else "" }}" placeholder="e.g. 42">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="patient_gender">Gender</label>
+                            <select class="form-control" id="patient_gender" name="patient_gender">
+                                <option value="" {% if not prescription or not prescription.patient_gender %}selected{% endif %}>Not specified</option>
+                                <option value="Female" {% if prescription and prescription.patient_gender == "Female" %}selected{% endif %}>Female</option>
+                                <option value="Male" {% if prescription and prescription.patient_gender == "Male" %}selected{% endif %}>Male</option>
+                                <option value="Other" {% if prescription and prescription.patient_gender == "Other" %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label class="form-label" for="diagnosis">Diagnosis</label>
-                        <textarea class="form-control" id="diagnosis" name="diagnosis" rows="3" required>{{ queue.current_patient.prescription.diagnosis if queue.current_patient.prescription else "" }}</textarea>
+                        <textarea class="form-control" id="diagnosis" name="diagnosis" rows="3" required placeholder="Clinical impression, symptoms, and doctor notes">{{ prescription.diagnosis if prescription else "" }}</textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="section-head prescription-section-head">
+                            <label class="form-label" style="margin:0;">Medicines</label>
+                            <button class="btn btn-outline btn-sm" type="button" data-add-medicine>+ Add Medicine</button>
+                        </div>
+                        <div class="medicine-list" data-medicine-list>
+                            {% for medicine in medicine_rows %}
+                                <div class="medicine-row" data-medicine-row>
+                                    <div class="form-group medicine-name">
+                                        <label class="form-label">Medicine Name</label>
+                                        <input class="form-control" name="medicine_name" type="text" value="{{ medicine.name }}" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Morning</label>
+                                        <input class="form-control" name="medicine_morning" type="text" value="{{ medicine.morning }}" placeholder="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Afternoon</label>
+                                        <input class="form-control" name="medicine_afternoon" type="text" value="{{ medicine.afternoon }}" placeholder="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Night</label>
+                                        <input class="form-control" name="medicine_night" type="text" value="{{ medicine.night }}" placeholder="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Duration</label>
+                                        <input class="form-control" name="medicine_duration" type="text" value="{{ medicine.duration }}" placeholder="5 days">
+                                    </div>
+                                    <div class="form-group medicine-instructions">
+                                        <label class="form-label">Special Instructions</label>
+                                        <input class="form-control" name="medicine_instructions" type="text" value="{{ medicine.instructions }}" placeholder="After food">
+                                    </div>
+                                    <button class="btn btn-ghost btn-sm medicine-remove" type="button" data-remove-medicine>Remove</button>
+                                </div>
+                            {% else %}
+                                <div class="medicine-row" data-medicine-row>
+                                    <div class="form-group medicine-name">
+                                        <label class="form-label">Medicine Name</label>
+                                        <input class="form-control" name="medicine_name" type="text" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Morning</label>
+                                        <input class="form-control" name="medicine_morning" type="text" placeholder="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Afternoon</label>
+                                        <input class="form-control" name="medicine_afternoon" type="text" placeholder="0">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Night</label>
+                                        <input class="form-control" name="medicine_night" type="text" placeholder="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Duration</label>
+                                        <input class="form-control" name="medicine_duration" type="text" placeholder="5 days">
+                                    </div>
+                                    <div class="form-group medicine-instructions">
+                                        <label class="form-label">Special Instructions</label>
+                                        <input class="form-control" name="medicine_instructions" type="text" placeholder="After food">
+                                    </div>
+                                    <button class="btn btn-ghost btn-sm medicine-remove" type="button" data-remove-medicine>Remove</button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="lifestyle_advice">Lifestyle Advice</label>
+                        <textarea class="form-control" id="lifestyle_advice" name="lifestyle_advice" rows="3" placeholder="Sleep, diet, activity, therapy, routines">{{ prescription.lifestyle_advice if prescription else "" }}</textarea>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="medicines">Medicines</label>
-                        <textarea class="form-control" id="medicines" name="medicines" rows="4" required>{{ queue.current_patient.prescription.medicines if queue.current_patient.prescription else "" }}</textarea>
+                        <label class="form-label" for="precautions">Precautions</label>
+                        <textarea class="form-control" id="precautions" name="precautions" rows="3" placeholder="Warnings, interactions, what to avoid">{{ prescription.precautions if prescription else "" }}</textarea>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="instructions">Instructions</label>
-                        <textarea class="form-control" id="instructions" name="instructions" rows="3">{{ queue.current_patient.prescription.instructions if queue.current_patient.prescription else "" }}</textarea>
+                        <label class="form-label" for="follow_up_notes">Follow-Up Notes</label>
+                        <textarea class="form-control" id="follow_up_notes" name="follow_up_notes" rows="3" placeholder="Progress markers, counselling notes, review plan">{{ prescription.follow_up_notes if prescription else "" }}</textarea>
                     </div>
+
                     <div class="form-group">
                         <label class="form-label" for="next_visit_date">Next Visit Date</label>
                         <input
@@ -74,11 +166,87 @@
                             id="next_visit_date"
                             type="date"
                             name="next_visit_date"
-                            value="{{ queue.current_patient.prescription.next_visit_date.isoformat() if queue.current_patient.prescription and queue.current_patient.prescription.next_visit_date else "" }}"
+                            value="{{ prescription.next_visit_date.isoformat() if prescription and prescription.next_visit_date else "" }}"
                         >
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="follow_up_recommendation">Follow-up Recommendation</label>
+                        <input class="form-control" id="follow_up_recommendation" name="follow_up_recommendation" type="text" value="{{ prescription.follow_up_recommendation if prescription else "" }}" placeholder="Review after 2 weeks or earlier if symptoms worsen">
                     </div>
                     <button class="btn btn-primary" type="submit">Generate Prescription</button>
                 </form>
+                <template data-medicine-template>
+                    <div class="medicine-row" data-medicine-row>
+                        <div class="form-group medicine-name">
+                            <label class="form-label">Medicine Name</label>
+                            <input class="form-control" name="medicine_name" type="text" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Morning</label>
+                            <input class="form-control" name="medicine_morning" type="text" placeholder="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Afternoon</label>
+                            <input class="form-control" name="medicine_afternoon" type="text" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Night</label>
+                            <input class="form-control" name="medicine_night" type="text" placeholder="1">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Duration</label>
+                            <input class="form-control" name="medicine_duration" type="text" placeholder="5 days">
+                        </div>
+                        <div class="form-group medicine-instructions">
+                            <label class="form-label">Special Instructions</label>
+                            <input class="form-control" name="medicine_instructions" type="text" placeholder="After food">
+                        </div>
+                        <button class="btn btn-ghost btn-sm medicine-remove" type="button" data-remove-medicine>Remove</button>
+                    </div>
+                </template>
+                <script>
+                    (function () {
+                        var form = document.querySelector("[data-prescription-form]");
+                        var list = document.querySelector("[data-medicine-list]");
+                        var template = document.querySelector("[data-medicine-template]");
+                        var addButton = document.querySelector("[data-add-medicine]");
+
+                        if (!form || !list || !template || !addButton) {
+                            return;
+                        }
+
+                        function updateRemoveButtons() {
+                            var rows = list.querySelectorAll("[data-medicine-row]");
+                            rows.forEach(function (row) {
+                                var remove = row.querySelector("[data-remove-medicine]");
+                                if (remove) {
+                                    remove.disabled = rows.length === 1;
+                                }
+                            });
+                        }
+
+                        addButton.addEventListener("click", function () {
+                            var row = template.content.firstElementChild.cloneNode(true);
+                            list.appendChild(row);
+                            row.querySelector("input").focus();
+                            updateRemoveButtons();
+                        });
+
+                        list.addEventListener("click", function (event) {
+                            if (!event.target.matches("[data-remove-medicine]")) {
+                                return;
+                            }
+
+                            var rows = list.querySelectorAll("[data-medicine-row]");
+                            if (rows.length > 1) {
+                                event.target.closest("[data-medicine-row]").remove();
+                                updateRemoveButtons();
+                            }
+                        });
+
+                        updateRemoveButtons();
+                    })();
+                </script>
             </section>
         {% endif %}
     </div>

@@ -4,7 +4,7 @@ from app.extensions import db, login_manager
 from app.models.appointment import Appointment, ensure_queue_columns
 from app.models.clinic_status import ClinicStatus
 from app.models.notification import Notification
-from app.models.prescription import Prescription
+from app.models.prescription import Prescription, ensure_prescription_columns
 from app.models.user import User
 from app.routes.auth import auth
 from app.routes.dashboard import dashboard
@@ -69,6 +69,7 @@ def create_app():
     with app.app_context():
         db.create_all()
         ensure_queue_columns()
+        ensure_prescription_columns()
         from app.services.clinic_status_service import ensure_default_clinic_status
 
         ensure_default_clinic_status()

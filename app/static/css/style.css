@@ -1414,14 +1414,113 @@ textarea:disabled {
     color: var(--muted);
 }
 
+.prescription-form {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-soft);
+    padding: 18px;
+}
+
+.prescription-section-head {
+    margin-bottom: 10px;
+}
+
+.medicine-list {
+    display: grid;
+    gap: 14px;
+}
+
+.medicine-row {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.4fr) repeat(4, minmax(82px, 0.55fr)) minmax(170px, 1.3fr) auto;
+    gap: 10px;
+    align-items: end;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 14px;
+}
+
+.medicine-row .form-control {
+    min-height: 46px;
+    padding: 10px 12px;
+}
+
+.medicine-row .form-label {
+    font-size: 13px;
+}
+
+.medicine-remove {
+    min-height: 46px;
+}
+
+.prescription-card {
+    margin-top: 28px;
+    border-color: #b5dfd9;
+}
+
+.prescription-card-header {
+    background: linear-gradient(135deg, var(--primary-soft), var(--surface));
+}
+
+.prescription-card-header .eyebrow,
+.prescription-card-header h3 {
+    margin: 0;
+}
+
 .prescription-ready {
     display: grid;
+    gap: 20px;
+}
+
+.prescription-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.prescription-summary > div {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-soft);
+    padding: 14px;
+}
+
+.prescription-summary span,
+.prescription-summary strong {
+    display: block;
+}
+
+.prescription-actions,
+.prescription-qr-panel {
+    display: grid;
     justify-items: center;
-    gap: 16px;
+    gap: 14px;
     text-align: center;
 }
 
-.prescription-ready p {
+.prescription-or {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 900;
+}
+
+.prescription-qr-panel {
+    width: min(280px, 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 16px;
+}
+
+.prescription-qr-panel p {
     margin: 0;
 }
 
@@ -1544,6 +1643,15 @@ textarea:disabled {
 
     .grid-3 {
         grid-template-columns: 1fr;
+    }
+
+    .medicine-row,
+    .prescription-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .medicine-remove {
+        width: 100%;
     }
 
     .status-toggle-group form,

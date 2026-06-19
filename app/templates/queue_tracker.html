@@ -76,28 +76,47 @@
             </div>
 
             {% if appointment.status == "completed" and appointment.prescription and appointment.prescription.pdf_filename %}
-                <div class="card" style="margin-top: var(--sp-8);">
-                    <div class="card-header">
-                        <h3>Prescription Ready &#9989;</h3>
-                        <span class="badge badge-done">Ready</span>
+                <div class="card prescription-card">
+                    <div class="card-header prescription-card-header">
+                        <div>
+                            <p class="eyebrow">Digital Prescription</p>
+                            <h3>Prescription Ready &#9989;</h3>
+                        </div>
+                        <span class="badge badge-open">Verified PDF</span>
                     </div>
                     <div class="card-body prescription-ready">
-                        <a
-                            class="btn btn-primary"
-                            href="{{ url_for('patient.download_prescription', prescription_id=appointment.prescription.id) }}"
-                            target="_blank"
-                            rel="noopener"
-                        >
-                            Download Prescription
-                        </a>
-                        {% if appointment.prescription.qr_filename %}
-                            <img
-                                class="prescription-qr"
-                                src="{{ url_for('patient.prescription_qr', prescription_id=appointment.prescription.id) }}"
-                                alt="QR Code to download prescription"
+                        <div class="prescription-summary">
+                            <div>
+                                <span class="detail-label">Generated Date</span>
+                                <strong>{{ appointment.prescription.created_at.strftime("%d %b %Y") }}</strong>
+                            </div>
+                            <div>
+                                <span class="detail-label">Doctor Name</span>
+                                <strong>{{ appointment.prescription.doctor_name or "ClinIQ Doctor" }}</strong>
+                            </div>
+                        </div>
+                        <div class="prescription-actions">
+                            <a
+                                class="btn btn-primary"
+                                href="{{ url_for('patient.download_prescription', prescription_id=appointment.prescription.id) }}"
+                                target="_blank"
+                                rel="noopener"
                             >
-                        {% endif %}
-                        <p class="text-muted">Scan QR Code to download prescription</p>
+                                Download Prescription PDF
+                            </a>
+                            <span class="prescription-or">OR</span>
+                            <div class="prescription-qr-panel">
+                                <p class="text-muted">Scan QR Code</p>
+                                {% if appointment.prescription.qr_filename %}
+                                    <img
+                                        class="prescription-qr"
+                                        src="{{ url_for('patient.prescription_qr', prescription_id=appointment.prescription.id) }}"
+                                        alt="QR Code to download prescription"
+                                    >
+                                {% endif %}
+                                <p class="text-muted">Scan to download prescription</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             {% endif %}
