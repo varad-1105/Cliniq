@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, jsonify, render_template
 from config import Config
 from app.extensions import db, login_manager
 from app.models.appointment import Appointment, ensure_queue_columns
@@ -52,6 +52,10 @@ def create_app():
             "home.html",
             clinic_status=get_current_clinic_status(),
         )
+
+    @app.get("/health")
+    def health():
+        return jsonify(status="ok"), 200
 
     @app.errorhandler(404)
     def not_found(error):
