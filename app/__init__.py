@@ -4,6 +4,7 @@ from app.extensions import db, login_manager
 from app.models.appointment import Appointment, ensure_queue_columns
 from app.models.clinic_status import ClinicStatus
 from app.models.notification import Notification
+from app.models.prescription import Prescription
 from app.models.user import User
 from app.routes.auth import auth
 from app.routes.dashboard import dashboard

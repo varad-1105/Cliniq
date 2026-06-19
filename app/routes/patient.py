@@ -1,15 +1,17 @@
 import re
 from datetime import datetime, time
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, flash, redirect, render_template, request, send_file, url_for
 
 from app.extensions import db
 from app.models.appointment import Appointment
+from app.models.prescription import Prescription
 from app.services.clinic_status_service import (
     get_current_clinic_status,
     is_clinic_closed,
 )
 from app.services.notification_service import get_notifications_for_phone
+from app.services.prescription_service import get_prescription_file_path, get_qr_file_path
 from app.services.queue_service import get_patient_queue_status
 
 patient = Blueprint("patient", __name__)
@@ -156,3 +158,38 @@ def queue_tracker():
         notifications=notifications,
         searched_phone=searched_phone,
     )
+
+
+@patient.route("/prescription/<int:prescription_id>")
+def download_prescription(prescription_id):
+    prescription = db.session.get(Prescription, prescription_id)
+
+    if not prescription:
+        abort(404)
+
+    file_path = get_prescription_file_path(prescription)
+
+    if not file_path or not file_path.exists():
+        abort(404)
+
+    return send_file(
+        file_path,
+        mimetype="application/pdf",
+        as_attachment=False,
+        download_name=f"cliniq-prescription-{prescription.id}.pdf",
+    )
+
+
+@patient.route("/prescription/<int:prescription_id>/qr")
+def prescription_qr(prescription_id):
+    prescription = db.session.get(Prescription, prescription_id)
+
+    if not prescription:
+        abort(404)
+
+    file_path = get_qr_file_path(prescription)
+
+    if not file_path or not file_path.exists():
+        abort(404)
+
+    return send_file(file_path, mimetype="image/png")

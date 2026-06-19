@@ -1414,6 +1414,26 @@ textarea:disabled {
     color: var(--muted);
 }
 
+.prescription-ready {
+    display: grid;
+    justify-items: center;
+    gap: 16px;
+    text-align: center;
+}
+
+.prescription-ready p {
+    margin: 0;
+}
+
+.prescription-qr {
+    width: min(220px, 100%);
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: #ffffff;
+    padding: 10px;
+}
+
 .status-toggle-group {
     display: flex;
     flex-wrap: wrap;

@@ -75,6 +75,33 @@
                 </div>
             </div>
 
+            {% if appointment.status == "completed" and appointment.prescription and appointment.prescription.pdf_filename %}
+                <div class="card" style="margin-top: var(--sp-8);">
+                    <div class="card-header">
+                        <h3>Prescription Ready &#9989;</h3>
+                        <span class="badge badge-done">Ready</span>
+                    </div>
+                    <div class="card-body prescription-ready">
+                        <a
+                            class="btn btn-primary"
+                            href="{{ url_for('patient.download_prescription', prescription_id=appointment.prescription.id) }}"
+                            target="_blank"
+                            rel="noopener"
+                        >
+                            Download Prescription
+                        </a>
+                        {% if appointment.prescription.qr_filename %}
+                            <img
+                                class="prescription-qr"
+                                src="{{ url_for('patient.prescription_qr', prescription_id=appointment.prescription.id) }}"
+                                alt="QR Code to download prescription"
+                            >
+                        {% endif %}
+                        <p class="text-muted">Scan QR Code to download prescription</p>
+                    </div>
+                </div>
+            {% endif %}
+
             <section class="section" style="padding-bottom:0;">
                 <div class="section-head">
                     <h2>Recent Updates</h2>

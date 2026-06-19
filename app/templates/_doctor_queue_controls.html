@@ -45,6 +45,41 @@
                     </button>
                 </div>
             </form>
+
+            <div class="divider"></div>
+            <section>
+                <div class="section-head">
+                    <h3>Create Prescription</h3>
+                    {% if queue.current_patient.prescription %}
+                        <a class="btn btn-outline btn-sm" href="{{ url_for('patient.download_prescription', prescription_id=queue.current_patient.prescription.id) }}" target="_blank" rel="noopener">View Existing</a>
+                    {% endif %}
+                </div>
+                <form method="POST" action="{{ url_for('dashboard.generate_prescription', appointment_id=queue.current_patient.id) }}" class="form-stack">
+                    <div class="form-group">
+                        <label class="form-label" for="diagnosis">Diagnosis</label>
+                        <textarea class="form-control" id="diagnosis" name="diagnosis" rows="3" required>{{ queue.current_patient.prescription.diagnosis if queue.current_patient.prescription else "" }}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="medicines">Medicines</label>
+                        <textarea class="form-control" id="medicines" name="medicines" rows="4" required>{{ queue.current_patient.prescription.medicines if queue.current_patient.prescription else "" }}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="instructions">Instructions</label>
+                        <textarea class="form-control" id="instructions" name="instructions" rows="3">{{ queue.current_patient.prescription.instructions if queue.current_patient.prescription else "" }}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="next_visit_date">Next Visit Date</label>
+                        <input
+                            class="form-control"
+                            id="next_visit_date"
+                            type="date"
+                            name="next_visit_date"
+                            value="{{ queue.current_patient.prescription.next_visit_date.isoformat() if queue.current_patient.prescription and queue.current_patient.prescription.next_visit_date else "" }}"
+                        >
+                    </div>
+                    <button class="btn btn-primary" type="submit">Generate Prescription</button>
+                </form>
+            </section>
         {% endif %}
     </div>
 </div>

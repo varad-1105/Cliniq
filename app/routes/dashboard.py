@@ -20,6 +20,7 @@ from app.services.doctor_service import (
     save_consultation_notes,
 )
 from app.services.notification_service import get_notification_stats
+from app.services.prescription_service import create_or_update_prescription
 from app.services.queue_service import (
     complete_current_consultation,
     get_queue_summary,
@@ -108,6 +109,28 @@ def save_notes(appointment_id):
         request.form.get("consultation_notes", ""),
     )
     flash(f"Notes saved for {appointment.patient_name}.")
+    return redirect(url_for("dashboard.doctor_dashboard"))
+
+
+@dashboard.route("/doctor/appointments/<int:appointment_id>/prescription", methods=["POST"])
+@role_required("doctor")
+def generate_prescription(appointment_id):
+    try:
+        errors, prescription = create_or_update_prescription(
+            appointment_id,
+            request.form,
+            current_user.name,
+        )
+    except ValueError as error:
+        flash(str(error))
+        return redirect(url_for("dashboard.doctor_dashboard"))
+
+    if errors:
+        for error in errors:
+            flash(error)
+        return redirect(url_for("dashboard.doctor_dashboard"))
+
+    flash(f"Prescription generated for {prescription.patient_name}.")
     return redirect(url_for("dashboard.doctor_dashboard"))
 
 
