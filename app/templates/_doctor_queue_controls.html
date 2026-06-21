@@ -54,7 +54,7 @@
                         <p class="text-muted" style="margin: 4px 0 0;">Structured prescription with dosage timing, patient context, and follow-up plan.</p>
                     </div>
                     {% if queue.current_patient.prescription %}
-                        <a class="btn btn-outline btn-sm" href="{{ url_for('patient.download_prescription', prescription_id=queue.current_patient.prescription.id) }}" target="_blank" rel="noopener">View PDF</a>
+                        <a class="btn btn-outline btn-sm" href="{{ url_for('patient.download_prescription', token=queue.current_patient.prescription.access_token) }}" target="_blank" rel="noopener">View PDF</a>
                     {% endif %}
                 </div>
                 {% set prescription = queue.current_patient.prescription %}
@@ -73,6 +73,42 @@
                                 <option value="Male" {% if prescription and prescription.patient_gender == "Male" %}selected{% endif %}>Male</option>
                                 <option value="Other" {% if prescription and prescription.patient_gender == "Other" %}selected{% endif %}>Other</option>
                             </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="doctor_qualification">Doctor Qualification</label>
+                            <input class="form-control" id="doctor_qualification" name="doctor_qualification" type="text" value="{{ prescription.doctor_qualification if prescription else "" }}" placeholder="e.g. MD">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="doctor_specialization">Specialization</label>
+                            <input class="form-control" id="doctor_specialization" name="doctor_specialization" type="text" value="{{ prescription.doctor_specialization if prescription else "" }}" placeholder="e.g. Psychiatry">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="doctor_registration_number">Registration No.</label>
+                            <input class="form-control" id="doctor_registration_number" name="doctor_registration_number" type="text" value="{{ prescription.doctor_registration_number if prescription else "" }}" placeholder="e.g. REG-12345">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="patient_history_summary">Patient History Summary</label>
+                        <textarea class="form-control" id="patient_history_summary" name="patient_history_summary" rows="3" placeholder="Brief history, existing conditions, medication history">{{ prescription.patient_history_summary if prescription else "" }}</textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="bp">BP</label>
+                            <input class="form-control" id="bp" name="bp" type="text" value="{{ prescription.bp if prescription else "" }}" placeholder="e.g. 120/80">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="weight">Weight</label>
+                            <input class="form-control" id="weight" name="weight" type="text" value="{{ prescription.weight if prescription else "" }}" placeholder="e.g. 68 kg">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="pulse">Pulse</label>
+                            <input class="form-control" id="pulse" name="pulse" type="text" value="{{ prescription.pulse if prescription else "" }}" placeholder="e.g. 78 bpm">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="spo2">SpO2</label>
+                            <input class="form-control" id="spo2" name="spo2" type="text" value="{{ prescription.spo2 if prescription else "" }}" placeholder="e.g. 98%">
                         </div>
                     </div>
                     <div class="form-group">

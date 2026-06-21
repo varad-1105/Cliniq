@@ -1,8 +1,8 @@
 import json
 import os
+import secrets
 from datetime import datetime
 from pathlib import Path
-from uuid import uuid4
 from xml.sax.saxutils import escape
 
 import qrcode
@@ -35,6 +35,7 @@ CLINIC_PHONE = "+91 98765 43210"
 CLINIC_EMAIL = "care@cliniq.health"
 CLINIC_WEBSITE = "www.cliniq.health"
 DEFAULT_SPECIALIZATION = "Consultant Psychiatrist"
+DEFAULT_QUALIFICATION = "MD"
 DEFAULT_REGISTRATION_NUMBER = "REG-CLINIQ-2026"
 
 
@@ -43,6 +44,14 @@ def parse_prescription_form(form):
     diagnosis = form.get("diagnosis", "").strip()
     patient_age = form.get("patient_age", "").strip()
     patient_gender = form.get("patient_gender", "").strip()
+    doctor_qualification = form.get("doctor_qualification", "").strip()
+    doctor_specialization = form.get("doctor_specialization", "").strip()
+    doctor_registration_number = form.get("doctor_registration_number", "").strip()
+    patient_history_summary = form.get("patient_history_summary", "").strip()
+    bp = form.get("bp", "").strip()
+    weight = form.get("weight", "").strip()
+    pulse = form.get("pulse", "").strip()
+    spo2 = form.get("spo2", "").strip()
     lifestyle_advice = form.get("lifestyle_advice", "").strip()
     precautions = form.get("precautions", "").strip()
     follow_up_notes = form.get("follow_up_notes", "").strip()
@@ -66,6 +75,14 @@ def parse_prescription_form(form):
     return errors, {
         "patient_age": patient_age,
         "patient_gender": patient_gender,
+        "doctor_qualification": doctor_qualification,
+        "doctor_specialization": doctor_specialization,
+        "doctor_registration_number": doctor_registration_number,
+        "patient_history_summary": patient_history_summary,
+        "bp": bp,
+        "weight": weight,
+        "pulse": pulse,
+        "spo2": spo2,
         "diagnosis": diagnosis,
         "medicines": medicines,
         "lifestyle_advice": lifestyle_advice,
@@ -98,8 +115,14 @@ def create_or_update_prescription(appointment_id, form, doctor_name):
     prescription.patient_age = data["patient_age"]
     prescription.patient_gender = data["patient_gender"]
     prescription.doctor_name = doctor_name
-    prescription.doctor_specialization = DEFAULT_SPECIALIZATION
-    prescription.doctor_registration_number = DEFAULT_REGISTRATION_NUMBER
+    prescription.doctor_qualification = data["doctor_qualification"] or DEFAULT_QUALIFICATION
+    prescription.doctor_specialization = data["doctor_specialization"] or DEFAULT_SPECIALIZATION
+    prescription.doctor_registration_number = data["doctor_registration_number"] or DEFAULT_REGISTRATION_NUMBER
+    prescription.patient_history_summary = data["patient_history_summary"]
+    prescription.bp = data["bp"]
+    prescription.weight = data["weight"]
+    prescription.pulse = data["pulse"]
+    prescription.spo2 = data["spo2"]
     prescription.diagnosis = data["diagnosis"]
     prescription.medicines = json.dumps(data["medicines"])
     prescription.instructions = _medicine_summary(data["medicines"])
@@ -108,6 +131,10 @@ def create_or_update_prescription(appointment_id, form, doctor_name):
     prescription.follow_up_notes = data["follow_up_notes"]
     prescription.follow_up_recommendation = data["follow_up_recommendation"]
     prescription.next_visit_date = data["next_visit_date"]
+
+    if not prescription.access_token:
+        prescription.access_token = secrets.token_urlsafe(32)
+
     db.session.commit()
 
     pdf_filename = generate_prescription_pdf(prescription)
@@ -158,7 +185,10 @@ def generate_prescription_pdf(prescription):
     story.append(_doctor_card(prescription, styles))
     story.append(Spacer(1, 0.12 * inch))
     story.append(_patient_card(prescription, styles))
-    story.append(Spacer(1, 0.14 * inch))
+    story.append(Spacer(1, 0.12 * inch))
+    if prescription.patient_history_summary or prescription.bp or prescription.weight or prescription.pulse or prescription.spo2:
+        story.append(_history_and_vitals_card(prescription, styles))
+        story.append(Spacer(1, 0.14 * inch))
     story.append(_section_card("Diagnosis", prescription.diagnosis, styles, highlighted=True))
     story.append(Spacer(1, 0.14 * inch))
     story.append(_medicine_table(get_medicine_rows(prescription), styles))
@@ -184,7 +214,7 @@ def generate_prescription_qr(prescription):
 
     prescription_url = url_for(
         "patient.download_prescription",
-        prescription_id=prescription.id,
+        token=prescription.access_token,
         _external=True,
     )
     image = qrcode.make(prescription_url)
@@ -227,15 +257,15 @@ def _doctor_card(prescription, styles):
     data = [
         [
             _label_value("Doctor", prescription.doctor_name or "ClinIQ Doctor", styles),
+            _label_value("Qualification", prescription.doctor_qualification or DEFAULT_QUALIFICATION, styles),
+        ],
+        [
             _label_value("Specialization", prescription.doctor_specialization or DEFAULT_SPECIALIZATION, styles),
-        ],
-        [
             _label_value("Registration No.", prescription.doctor_registration_number or DEFAULT_REGISTRATION_NUMBER, styles),
-            _label_value("Date", prescription.created_at.strftime("%d %b %Y"), styles),
         ],
         [
+            _label_value("Consultation Date", prescription.created_at.strftime("%d %b %Y"), styles),
             _label_value("Consultation ID", f"CLQ-{appointment.id:05d}", styles),
-            _label_value("Prescription ID", f"RX-{prescription.id:05d}", styles),
         ],
     ]
     return _card_table(data, [3.35 * inch, 3.35 * inch], "#edf6f4")
@@ -258,6 +288,47 @@ def _patient_card(prescription, styles):
         ],
     ]
     return _card_table(data, [3.35 * inch, 3.35 * inch], "#ffffff")
+
+
+def _history_and_vitals_card(prescription, styles):
+    rows = []
+    if prescription.patient_history_summary:
+        rows.append(
+            [
+                Paragraph("History Summary", styles["SectionTitle"]),
+                Paragraph(_linebreaks(prescription.patient_history_summary), styles["Body"]),
+                "",
+                "",
+            ]
+        )
+
+    rows.append(
+        [
+            _label_value("BP", prescription.bp or "—", styles),
+            _label_value("Weight", prescription.weight or "—", styles),
+            _label_value("Pulse", prescription.pulse or "—", styles),
+            _label_value("SpO2", prescription.spo2 or "—", styles),
+        ]
+    )
+
+    column_widths = [1.85 * inch, 1.85 * inch, 1.85 * inch, 1.85 * inch]
+    table = Table(rows, colWidths=column_widths)
+    table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eef7f4")),
+                ("BOX", (0, 0), (-1, -1), 0.8, colors.HexColor("#b9ceca")),
+                ("INNERGRID", (0, 0), (-1, -1), 0.35, colors.HexColor("#d8e7e4")),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                ("LEFTPADDING", (0, 0), (-1, -1), 10),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+                ("TOPPADDING", (0, 0), (-1, -1), 8),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+                ("SPAN", (0, 0), (-1, 0)),
+            ]
+        )
+    )
+    return table
 
 
 def _section_card(title, text, styles, highlighted=False):

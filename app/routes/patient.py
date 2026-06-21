@@ -1,4 +1,5 @@
 import re
+import secrets
 from datetime import datetime, time
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, send_file, url_for
@@ -11,7 +12,12 @@ from app.services.clinic_status_service import (
     is_clinic_closed,
 )
 from app.services.notification_service import get_notifications_for_phone
-from app.services.prescription_service import get_prescription_file_path, get_qr_file_path
+from app.services.prescription_service import (
+    generate_prescription_pdf,
+    generate_prescription_qr,
+    get_prescription_file_path,
+    get_qr_file_path,
+)
 from app.services.queue_service import get_patient_queue_status
 
 patient = Blueprint("patient", __name__)
@@ -160,12 +166,29 @@ def queue_tracker():
     )
 
 
+@patient.route("/prescription/")
 @patient.route("/prescription/<int:prescription_id>")
-def download_prescription(prescription_id):
-    prescription = db.session.get(Prescription, prescription_id)
+def download_prescription(prescription_id=None):
+    token = request.args.get("token", "").strip()
+    prescription = None
+
+    if prescription_id is not None:
+        prescription = db.session.get(Prescription, prescription_id)
+    elif token:
+        prescription = Prescription.query.filter_by(access_token=token).first()
 
     if not prescription:
         abort(404)
+
+    if not token or token != prescription.access_token:
+        abort(403)
+
+    # Ensure PDF and QR exist
+    file_path = get_prescription_file_path(prescription)
+    if not file_path or not file_path.exists():
+        generate_prescription_pdf(prescription)
+        generate_prescription_qr(prescription)
+        db.session.commit()
 
     file_path = get_prescription_file_path(prescription)
 
@@ -180,12 +203,19 @@ def download_prescription(prescription_id):
     )
 
 
-@patient.route("/prescription/<int:prescription_id>/qr")
+@patient.route("/prescription/qr/<int:prescription_id>")
 def prescription_qr(prescription_id):
+    token = request.args.get("token", "").strip()
     prescription = db.session.get(Prescription, prescription_id)
 
-    if not prescription:
-        abort(404)
+    if not prescription or not token or token != prescription.access_token:
+        abort(403)
+
+    # Ensure QR exists
+    file_path = get_qr_file_path(prescription)
+    if not file_path or not file_path.exists():
+        generate_prescription_qr(prescription)
+        db.session.commit()
 
     file_path = get_qr_file_path(prescription)
 

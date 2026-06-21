@@ -98,7 +98,7 @@
                         <div class="prescription-actions">
                             <a
                                 class="btn btn-primary"
-                                href="{{ url_for('patient.download_prescription', prescription_id=appointment.prescription.id) }}"
+                                href="{{ url_for('patient.download_prescription', token=appointment.prescription.access_token) }}"
                                 target="_blank"
                                 rel="noopener"
                             >
@@ -110,7 +110,7 @@
                                 {% if appointment.prescription.qr_filename %}
                                     <img
                                         class="prescription-qr"
-                                        src="{{ url_for('patient.prescription_qr', prescription_id=appointment.prescription.id) }}"
+                                        src="{{ url_for('patient.prescription_qr', prescription_id=appointment.prescription.id, token=appointment.prescription.access_token) }}"
                                         alt="QR Code to download prescription"
                                     >
                                 {% endif %}
