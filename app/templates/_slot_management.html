@@ -24,7 +24,7 @@
             <table class="table">
                 <thead><tr><th>Date</th><th>Time</th><th>Status</th><th>Actions</th></tr></thead>
                 <tbody>
-                            {% for slot in slots %}
+                                    {% for slot in slots %}
                         <tr>
                             <td>{{ slot.slot_date.strftime('%Y-%m-%d') }}</td>
                             <td>{{ slot.slot_time.strftime('%I:%M %p') }}</td>

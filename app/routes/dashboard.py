@@ -53,7 +53,14 @@ def doctor_dashboard():
     status_filter = request.args.get("status", "").strip()
     queue = get_queue_summary()
     clinic_status = get_current_clinic_status()
-    slots = Slot.query.order_by(Slot.slot_date.asc(), Slot.slot_time.asc()).limit(50).all()
+    from flask_login import current_user
+    slots = (
+        Slot.query
+        .filter((Slot.doctor_id == current_user.id))
+        .order_by(Slot.slot_date.asc(), Slot.slot_time.asc())
+        .limit(50)
+        .all()
+    )
     return render_template(
         "doctor_dashboard.html",
         queue=queue,
@@ -106,7 +113,9 @@ def add_slot():
         flash("Invalid date or time format.")
         return redirect(url_for("dashboard.doctor_dashboard"))
 
-    slot = Slot(slot_date=slot_date, slot_time=slot_time, status="available")
+    from flask_login import current_user
+
+    slot = Slot(slot_date=slot_date, slot_time=slot_time, status="available", doctor_id=current_user.id)
     db.session.add(slot)
     db.session.commit()
     flash("Slot created")

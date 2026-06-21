@@ -6,7 +6,7 @@ from app.models.clinic_status import ClinicStatus
 from app.models.notification import Notification
 from app.models.prescription import Prescription, ensure_prescription_columns
 from app.models.user import User
-from app.models.slot import Slot
+from app.models.slot import Slot, ensure_slot_columns
 from app.routes.auth import auth
 from app.routes.dashboard import dashboard
 from app.routes.patient import patient
@@ -71,6 +71,7 @@ def create_app():
         db.create_all()
         ensure_queue_columns()
         ensure_prescription_columns()
+        ensure_slot_columns()
         from app.services.clinic_status_service import ensure_default_clinic_status
 
         ensure_default_clinic_status()
