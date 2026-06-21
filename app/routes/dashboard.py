@@ -243,13 +243,14 @@ def unbook_slot(slot_id):
         return redirect(url_for("dashboard.receptionist_dashboard"))
 
     try:
-        with db.session.begin():
-            # detach appointment but keep appointment record intact
-            slot.appointment_id = None
-            slot.status = "available"
-            db.session.add(slot)
+        # detach appointment but keep appointment record intact
+        slot.appointment_id = None
+        slot.status = "available"
+        db.session.add(slot)
+        db.session.commit()
         flash("Slot has been unbooked.")
     except Exception:
+        db.session.rollback()
         flash("Failed to unbook the slot. Try again.")
 
     return redirect(url_for("dashboard.receptionist_dashboard"))

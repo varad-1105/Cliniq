@@ -82,6 +82,13 @@ python seed.py
 python run.py
 ```
 
+Run tests:
+
+```powershell
+pip install pytest
+c:\Users\HP\Desktop\Cliniq\venv\Scripts\python.exe -m pytest -q
+```
+
 Open:
 
 ```text
