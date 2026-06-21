@@ -1,0 +1,46 @@
+<div class="card">
+    <div class="card-header">
+        <h3>Slot Management</h3>
+        <span class="badge badge-done">Doctor only</span>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('dashboard.add_slot') }}" class="form-row">
+            <div class="form-group">
+                <label class="form-label">Date</label>
+                <input class="form-control" type="date" name="slot_date" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Time</label>
+                <input class="form-control" type="time" name="slot_time" required>
+            </div>
+            <div class="flex items-center">
+                <button class="btn btn-primary" type="submit">Add Slot</button>
+            </div>
+        </form>
+
+        <hr/>
+        <h4>Existing Slots (today and upcoming)</h4>
+        <div class="table-wrapper">
+            <table class="table">
+                <thead><tr><th>Date</th><th>Time</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                            {% for slot in slots %}
+                        <tr>
+                            <td>{{ slot.slot_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ slot.slot_time.strftime('%I:%M %p') }}</td>
+                            <td><span class="badge">{{ slot.status }}</span></td>
+                            <td>
+                                <form method="POST" action="{{ url_for('dashboard.toggle_slot', slot_id=slot.id) }}" style="display:inline-block;">
+                                    <button class="btn btn-outline btn-sm">Toggle</button>
+                                </form>
+                                <form method="POST" action="{{ url_for('dashboard.delete_slot', slot_id=slot.id) }}" style="display:inline-block;">
+                                    <button class="btn btn-ghost btn-sm">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

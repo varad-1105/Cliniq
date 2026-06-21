@@ -56,6 +56,9 @@ def create_demo_appointment(name, phone, reason, visit_time, status):
 
 
 with app.app_context():
+    # Demo users (kept here for local testing only):
+    # Doctor: doctor@cliniq.com / 123456
+    # Receptionist: receptionist@cliniq.com / 123456
     upsert_user("Admin Doctor", "doctor@cliniq.com", "123456", "doctor")
     upsert_user("Front Desk", "receptionist@cliniq.com", "123456", "receptionist")
 

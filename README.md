@@ -90,28 +90,7 @@ http://127.0.0.1:5000
 
 ## Demo Credentials
 
-Doctor:
-
-```text
-doctor@cliniq.com
-123456
-```
-
-Receptionist:
-
-```text
-receptionist@cliniq.com
-123456
-```
-
-Demo queue tracker phone numbers:
-
-```text
-7000000001
-7000000002
-7000000003
-7000000004
-```
+Demo credentials have been removed from the public README. To seed demo users and appointments, run `python seed.py` — the demo credentials are included as comments in `seed.py` for local testing only.
 
 ## Render Deployment
 

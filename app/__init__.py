@@ -6,6 +6,7 @@ from app.models.clinic_status import ClinicStatus
 from app.models.notification import Notification
 from app.models.prescription import Prescription, ensure_prescription_columns
 from app.models.user import User
+from app.models.slot import Slot
 from app.routes.auth import auth
 from app.routes.dashboard import dashboard
 from app.routes.patient import patient

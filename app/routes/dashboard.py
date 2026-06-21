@@ -26,6 +26,7 @@ from app.services.queue_service import (
     get_queue_summary,
     start_next_consultation,
 )
+from app.models.slot import Slot
 
 dashboard = Blueprint("dashboard", __name__)
 
@@ -52,6 +53,7 @@ def doctor_dashboard():
     status_filter = request.args.get("status", "").strip()
     queue = get_queue_summary()
     clinic_status = get_current_clinic_status()
+    slots = Slot.query.order_by(Slot.slot_date.asc(), Slot.slot_time.asc()).limit(50).all()
     return render_template(
         "doctor_dashboard.html",
         queue=queue,
@@ -62,6 +64,7 @@ def doctor_dashboard():
         search=search,
         status_filter=status_filter,
         search_results=get_search_results(search, status_filter),
+        slots=slots,
     )
 
 
@@ -82,6 +85,60 @@ def set_clinic_status(status_value):
 def doctor_queue():
     queue = get_queue_summary()
     return render_template("doctor_queue.html", queue=queue)
+
+
+@dashboard.route("/doctor/slots", methods=["POST"])
+@role_required("doctor")
+def add_slot():
+    from datetime import datetime
+
+    date_raw = request.form.get("slot_date", "").strip()
+    time_raw = request.form.get("slot_time", "").strip()
+
+    if not date_raw or not time_raw:
+        flash("Date and time are required to create a slot.")
+        return redirect(url_for("dashboard.doctor_dashboard"))
+
+    try:
+        slot_date = datetime.strptime(date_raw, "%Y-%m-%d").date()
+        slot_time = datetime.strptime(time_raw, "%H:%M").time()
+    except ValueError:
+        flash("Invalid date or time format.")
+        return redirect(url_for("dashboard.doctor_dashboard"))
+
+    slot = Slot(slot_date=slot_date, slot_time=slot_time, status="available")
+    db.session.add(slot)
+    db.session.commit()
+    flash("Slot created")
+    return redirect(url_for("dashboard.doctor_dashboard"))
+
+
+@dashboard.route("/doctor/slots/<int:slot_id>/toggle", methods=["POST"])
+@role_required("doctor")
+def toggle_slot(slot_id):
+    slot = db.session.get(Slot, slot_id)
+    if not slot:
+        flash("Slot not found")
+        return redirect(url_for("dashboard.doctor_dashboard"))
+
+    slot.status = "disabled" if slot.status == "available" else "available"
+    db.session.commit()
+    flash("Slot updated")
+    return redirect(url_for("dashboard.doctor_dashboard"))
+
+
+@dashboard.route("/doctor/slots/<int:slot_id>/delete", methods=["POST"])
+@role_required("doctor")
+def delete_slot(slot_id):
+    slot = db.session.get(Slot, slot_id)
+    if not slot:
+        flash("Slot not found")
+        return redirect(url_for("dashboard.doctor_dashboard"))
+
+    db.session.delete(slot)
+    db.session.commit()
+    flash("Slot deleted")
+    return redirect(url_for("dashboard.doctor_dashboard"))
 
 
 @dashboard.route("/doctor/queue/start", methods=["POST"])

@@ -36,12 +36,17 @@
                     <span class="detail-label">Token</span>
                     <span class="detail-value">{{ appointment.token_number or "Assigned after approval" }}</span>
                 </div>
+                <div class="detail-row">
+                    <span class="detail-label">Tracking ID</span>
+                    <span class="detail-value">{{ appointment.tracking_id or "-" }}</span>
+                </div>
             </div>
 
             <div class="flex flex-wrap gap-3" style="justify-content:center;">
                 <a class="btn btn-primary" href="{{ url_for('patient.queue_tracker') }}">Track Queue</a>
                 <a class="btn btn-outline" href="{{ url_for('patient.book_appointment') }}">Book Another</a>
                 <a class="btn btn-ghost" href="{{ url_for('home') }}">Home</a>
+                <a class="btn btn-ghost" href="{{ url_for('patient.appointment_history', appointment_id=appointment.id) }}">View Visit History</a>
             </div>
         </div>
     </div>

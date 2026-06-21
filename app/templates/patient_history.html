@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Patient History - ClinIQ{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container-narrow">
+        <div class="card">
+            <div class="card-header">
+                <h3>Visit History for {{ appointment.patient_name }}</h3>
+                <span class="badge">{{ previous|length }} visits</span>
+            </div>
+            <div class="card-body">
+                {% for appt in previous %}
+                    <div class="detail-row">
+                        <div>
+                            <strong>{{ appt.preferred_date.strftime('%d %b %Y') }}</strong>
+                            &nbsp;at&nbsp;{{ appt.preferred_time.strftime('%I:%M %p') }}
+                        </div>
+                        <div>
+                            <span class="detail-label">Status</span>
+                            <span class="detail-value">{{ appt.status }}</span>
+                        </div>
+                        {% if appt.prescription %}
+                            <div>
+                                <a class="btn btn-sm btn-outline" href="{{ url_for('patient.download_prescription', token=appt.prescription.access_token) }}">View Prescription</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <hr/>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

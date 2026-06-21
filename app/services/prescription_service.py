@@ -4,6 +4,7 @@ import secrets
 from datetime import datetime
 from pathlib import Path
 from xml.sax.saxutils import escape
+from uuid import uuid4
 
 import qrcode
 from flask import current_app, url_for
@@ -211,12 +212,29 @@ def generate_prescription_qr(prescription):
     filename = _build_filename("prescription-qr", prescription.id, "png")
     file_path = _safe_instance_file(QR_DIR, filename)
     file_path.parent.mkdir(parents=True, exist_ok=True)
+    # Build an absolute URL for the prescription. url_for(..., _external=True)
+    # requires an active request context or SERVER_NAME to be configured.
+    try:
+        prescription_url = url_for(
+            "patient.download_prescription",
+            token=prescription.access_token,
+            _external=True,
+        )
+    except RuntimeError:
+        # Fallback: build a best-effort URL. Prefer an explicitly configured BASE_URL,
+        # then SERVER_NAME, otherwise use localhost with the configured scheme.
+        base = current_app.config.get("BASE_URL")
+        if not base:
+            server = current_app.config.get("SERVER_NAME")
+            scheme = current_app.config.get("PREFERRED_URL_SCHEME", "http")
+            if server:
+                base = f"{scheme}://{server}"
+            else:
+                base = f"{scheme}://localhost"
 
-    prescription_url = url_for(
-        "patient.download_prescription",
-        token=prescription.access_token,
-        _external=True,
-    )
+        # Build a relative path directly (avoid url_for outside request)
+        path = f"/prescription/?token={prescription.access_token}"
+        prescription_url = base.rstrip("/") + path
     image = qrcode.make(prescription_url)
     image.save(file_path)
     return filename

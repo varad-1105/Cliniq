@@ -18,7 +18,7 @@ from app.services.prescription_service import (
     get_prescription_file_path,
     get_qr_file_path,
 )
-from app.services.queue_service import get_patient_queue_status
+from app.services.queue_service import get_patient_queue_status, generate_tracking_code
 
 patient = Blueprint("patient", __name__)
 
@@ -59,6 +59,7 @@ def parse_booking_form(form):
     errors = []
     patient_name = form.get("patient_name", "").strip()
     phone_number = form.get("phone_number", "").strip()
+    slot_id_raw = form.get("slot_id", "").strip()
     reason_for_visit = form.get("reason_for_visit", "").strip()
     preferred_date_raw = form.get("preferred_date", "").strip()
 
@@ -74,13 +75,25 @@ def parse_booking_form(form):
         errors.append("Reason for visit is required.")
 
     preferred_date = None
-    if not preferred_date_raw:
-        errors.append("Preferred date is required.")
+    if slot_id_raw:
+        # Slot selection overrides preferred_date/time
+        from app.models.slot import Slot
+
+        slot = db.session.get(Slot, int(slot_id_raw)) if slot_id_raw.isdigit() else None
+        if not slot or slot.status != "available":
+            errors.append("Selected slot is not available.")
+        else:
+            preferred_date = slot.slot_date
+            # preferred_time will be set later from parse_preferred_time fallback
+            # We'll return slot selection to caller via form handling.
     else:
-        try:
-            preferred_date = datetime.strptime(preferred_date_raw, "%Y-%m-%d").date()
-        except ValueError:
-            errors.append("Enter a valid preferred date.")
+        if not preferred_date_raw:
+            errors.append("Preferred date is required.")
+        else:
+            try:
+                preferred_date = datetime.strptime(preferred_date_raw, "%Y-%m-%d").date()
+            except ValueError:
+                errors.append("Enter a valid preferred date.")
 
     preferred_time = None
     try:
@@ -94,12 +107,17 @@ def parse_booking_form(form):
         "reason_for_visit": reason_for_visit,
         "preferred_date": preferred_date,
         "preferred_time": preferred_time,
+        "slot_id": slot_id_raw,
     }
 
 
 @patient.route("/book", methods=["GET", "POST"])
 def book_appointment():
     clinic_status = get_current_clinic_status()
+
+    # Provide available slots for the booking form
+    from app.models.slot import Slot
+    available_slots = Slot.query.filter_by(status="available").order_by(Slot.slot_date.asc(), Slot.slot_time.asc()).limit(50).all()
 
     if request.method == "POST":
         if is_clinic_closed():
@@ -121,13 +139,29 @@ def book_appointment():
                 form=request.form,
             )
 
-        appointment = Appointment(**booking_data, status="pending")
+        # Generate a unique tracking ID for secure lookup
+        tracking_id = generate_tracking_code()
+        appointment = Appointment(**booking_data, status="pending", tracking_id=tracking_id)
         db.session.add(appointment)
         db.session.commit()
 
+        # If a slot was selected, attach it to the appointment and mark booked
+        slot_id = booking_data.get("slot_id")
+        if slot_id:
+            try:
+                from app.models.slot import Slot
+
+                slot = db.session.get(Slot, int(slot_id))
+                if slot and slot.status == "available":
+                    slot.appointment_id = appointment.id
+                    slot.status = "booked"
+                    db.session.commit()
+            except Exception:
+                pass
+
         return redirect(url_for("patient.booking_confirmation", appointment_id=appointment.id))
 
-    return render_template("book_appointment.html", clinic_status=clinic_status)
+    return render_template("book_appointment.html", clinic_status=clinic_status, available_slots=available_slots)
 
 
 @patient.route("/booking/<int:appointment_id>/confirmation")
@@ -144,18 +178,22 @@ def queue_tracker():
     searched_phone = ""
 
     if request.method == "POST":
-        searched_phone = request.form.get("phone_number", "").strip()
+        identifier = request.form.get("tracking_id", "").strip() or request.form.get("phone_number", "").strip()
 
-        if not searched_phone:
-            flash("Phone number is required.")
-        elif not is_valid_phone_number(searched_phone):
-            flash("Enter a valid phone number.")
+        if not identifier:
+            flash("Tracking ID or phone number is required.")
         else:
-            queue_status = get_patient_queue_status(searched_phone)
-            notifications = get_notifications_for_phone(searched_phone)
+            queue_status = get_patient_queue_status(identifier)
+            # For notifications, prefer appointment phone if identifier is a tracking id
+            if identifier and identifier.upper().startswith("CLQ-") and queue_status and queue_status.get("appointment"):
+                appt_phone = queue_status.get("appointment").phone_number
+                notifications = get_notifications_for_phone(appt_phone)
+            else:
+                notifications = get_notifications_for_phone(identifier)
 
             if queue_status is None:
-                flash("No appointment found for that phone number.")
+                flash("No appointment found for that identifier.")
+        searched_phone = identifier
 
     return render_template(
         "queue_tracker.html",
@@ -223,3 +261,22 @@ def prescription_qr(prescription_id):
         abort(404)
 
     return send_file(file_path, mimetype="image/png")
+
+
+@patient.route("/appointments/<int:appointment_id>/history")
+def appointment_history(appointment_id):
+    appointment = db.session.get(Appointment, appointment_id)
+    if not appointment:
+        abort(404)
+
+    phone = appointment.phone_number
+    # Find previous appointments for same phone
+    previous = (
+        Appointment.query
+        .filter(Appointment.phone_number == phone)
+        .order_by(Appointment.created_at.desc())
+        .limit(50)
+        .all()
+    )
+
+    return render_template("patient_history.html", appointment=appointment, previous=previous)

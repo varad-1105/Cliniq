@@ -94,5 +94,24 @@
             }
         })();
     </script>
+    <script>
+        // Preserve scroll position across page reloads and form actions.
+        (function () {
+            try {
+                var key = 'scrollPos:' + location.pathname;
+                var saved = sessionStorage.getItem(key);
+                if (saved) {
+                    window.scrollTo(0, parseInt(saved, 10));
+                    sessionStorage.removeItem(key);
+                }
+
+                window.addEventListener('beforeunload', function () {
+                    try {
+                        sessionStorage.setItem(key, String(window.scrollY || 0));
+                    } catch (e) {}
+                });
+            } catch (e) {}
+        })();
+    </script>
 </body>
 </html>

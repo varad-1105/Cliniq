@@ -196,7 +196,14 @@ def find_latest_appointment_by_phone(phone_number):
 
 
 def get_patient_queue_status(phone_number):
-    appointment = find_latest_appointment_by_phone(phone_number)
+    identifier = phone_number
+
+    # Accept either tracking ID (e.g. CLQ-XXXXXX) or phone number
+    appointment = None
+    if identifier and identifier.upper().startswith("CLQ-"):
+        appointment = Appointment.query.filter_by(tracking_id=identifier).first()
+    else:
+        appointment = find_latest_appointment_by_phone(identifier)
 
     if not appointment:
         return None
@@ -211,6 +218,20 @@ def get_patient_queue_status(phone_number):
         "people_ahead": get_people_ahead(appointment),
         "eta_minutes": get_estimated_wait_minutes(appointment),
     }
+
+
+def generate_tracking_code():
+    import secrets, string
+
+    alphabet = string.ascii_uppercase + string.digits
+
+    for _ in range(5):
+        code = "CLQ-" + "".join(secrets.choice(alphabet) for _ in range(6))
+        if not Appointment.query.filter_by(tracking_id=code).first():
+            return code
+
+    # Fallback
+    return "CLQ-" + secrets.token_urlsafe(6)[:6].upper()
 
 
 def send_turn_reminders(queue=None):

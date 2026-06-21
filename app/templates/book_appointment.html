@@ -70,6 +70,16 @@
 
                     <div class="form-group">
                         <label class="form-label">Preferred Time</label>
+                        {% if available_slots %}
+                            <label class="form-label">Or choose an available slot</label>
+                            <select class="form-control" name="slot_id">
+                                <option value="">No slot</option>
+                                {% for slot in available_slots %}
+                                    <option value="{{ slot.id }}">{{ slot.slot_date.strftime('%Y-%m-%d') }} {{ slot.slot_time.strftime('%I:%M %p') }}</option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-muted">Selecting a slot will reserve it and hide conflicting times.</p>
+                        {% endif %}
                         <div class="time-picker">
                             <div>
                     <label class="sr-only" for="preferred_hour">Hour</label>

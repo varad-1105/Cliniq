@@ -6,7 +6,7 @@
 <section class="queue-tracker-hero">
     <div class="container">
         <h1>Track Your Queue</h1>
-        <p>Enter your phone number to view appointment status, token, and estimated waiting time.</p>
+        <p>Enter your Tracking ID (CLQ-XXXXXX) to view appointment status, token, and estimated waiting time.</p>
     </div>
 </section>
 
@@ -17,14 +17,14 @@
         <div class="card" style="margin-bottom: var(--sp-8);">
             <form method="POST" class="card-body form-stack">
                 <div class="form-group">
-                    <label class="form-label" for="phone_number">Phone Number</label>
+                    <label class="form-label" for="tracking_id">Tracking ID</label>
                     <input
                         class="form-control"
-                        id="phone_number"
-                        type="tel"
-                        name="phone_number"
+                        id="tracking_id"
+                        type="text"
+                        name="tracking_id"
                         value="{{ searched_phone }}"
-                        placeholder="Enter registered phone number"
+                        placeholder="Enter your tracking ID (CLQ-XXXXXX)"
                         required
                     >
                 </div>

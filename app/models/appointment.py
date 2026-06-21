@@ -15,6 +15,7 @@ class Appointment(db.Model):
     status = db.Column(db.String(20), nullable=False, default="pending")
     token_number = db.Column(db.String(10), nullable=True)
     token_date = db.Column(db.Date, nullable=True)
+    tracking_id = db.Column(db.String(16), nullable=True, unique=True)
     consultation_started_at = db.Column(db.DateTime, nullable=True)
     consultation_notes = db.Column(db.Text, nullable=True)
     completed_at = db.Column(db.DateTime, nullable=True)
@@ -42,6 +43,7 @@ def ensure_queue_columns():
         "consultation_started_at": "DATETIME",
         "consultation_notes": "TEXT",
         "completed_at": "DATETIME",
+        "tracking_id": "VARCHAR(16)",
     }
 
     with db.engine.begin() as connection:
