@@ -13,6 +13,10 @@ class Slot(db.Model):
     doctor_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
+    # Relationships
+    appointment = db.relationship("Appointment", backref="slot", uselist=False)
+    doctor = db.relationship("User", backref="slots", lazy="joined")
+
     def __repr__(self):
         return f"<Slot {self.slot_date} {self.slot_time} - {self.status}>"
 

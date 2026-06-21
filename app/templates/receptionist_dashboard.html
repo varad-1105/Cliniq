@@ -73,7 +73,7 @@
                                         <td>{{ slot.slot_date.strftime('%Y-%m-%d') }}</td>
                                         <td>{{ slot.slot_time.strftime('%I:%M %p') }}</td>
                                         <td>{{ slot.appointment.patient_name if slot.appointment else '—' }}</td>
-                                        <td>{{ slot.doctor_id }}</td>
+                                        <td>{{ slot.doctor.name if slot.doctor else slot.doctor_id }}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
