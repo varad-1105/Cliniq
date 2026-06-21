@@ -115,6 +115,16 @@ def add_slot():
 
     from flask_login import current_user
 
+    # Prevent duplicate slots for the same doctor at the same time
+    existing = (
+        Slot.query
+        .filter_by(doctor_id=current_user.id, slot_date=slot_date, slot_time=slot_time)
+        .first()
+    )
+    if existing:
+        flash("A slot at that date and time already exists.")
+        return redirect(url_for("dashboard.doctor_dashboard"))
+
     slot = Slot(slot_date=slot_date, slot_time=slot_time, status="available", doctor_id=current_user.id)
     db.session.add(slot)
     db.session.commit()
@@ -207,12 +217,15 @@ def receptionist_dashboard():
     queue = get_queue_summary()
     notifications = get_notification_stats()
     clinic_status = get_current_clinic_status()
+    from app.models.slot import Slot
+    booked_slots = Slot.query.filter_by(status="booked").order_by(Slot.slot_date.asc(), Slot.slot_time.asc()).all()
     return render_template(
         "receptionist_dashboard.html",
         appointments=appointments,
         queue=queue,
         notifications=notifications,
         clinic_status=clinic_status,
+        booked_slots=booked_slots,
     )
 
 

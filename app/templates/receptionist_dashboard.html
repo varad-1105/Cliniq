@@ -60,6 +60,31 @@
             </div>
         </section>
 
+        <section class="card" style="margin-top: var(--sp-6);">
+            <div class="card-header"><h3>Booked Slots</h3></div>
+            <div class="card-body">
+                {% if booked_slots %}
+                    <div class="table-wrapper">
+                        <table class="table">
+                            <thead><tr><th>Date</th><th>Time</th><th>Patient</th><th>Doctor</th></tr></thead>
+                            <tbody>
+                                {% for slot in booked_slots %}
+                                    <tr>
+                                        <td>{{ slot.slot_date.strftime('%Y-%m-%d') }}</td>
+                                        <td>{{ slot.slot_time.strftime('%I:%M %p') }}</td>
+                                        <td>{{ slot.appointment.patient_name if slot.appointment else '—' }}</td>
+                                        <td>{{ slot.doctor_id }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No booked slots.</p>
+                {% endif %}
+            </div>
+        </section>
+
         {% with title="Pending Appointments", appointments=appointments.pending, show_actions=True, empty_message="No pending appointments right now." %}
             {% include "_appointment_section.html" %}
         {% endwith %}

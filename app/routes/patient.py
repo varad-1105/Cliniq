@@ -145,19 +145,29 @@ def book_appointment():
         db.session.add(appointment)
         db.session.commit()
 
-        # If a slot was selected, attach it to the appointment and mark booked
+        # If a slot was selected, attach it to the appointment and mark booked atomically
         slot_id = booking_data.get("slot_id")
         if slot_id:
+            from app.models.slot import Slot
             try:
-                from app.models.slot import Slot
-
-                slot = db.session.get(Slot, int(slot_id))
-                if slot and slot.status == "available":
-                    slot.appointment_id = appointment.id
-                    slot.status = "booked"
-                    db.session.commit()
+                sid = int(slot_id)
             except Exception:
-                pass
+                sid = None
+
+            if sid:
+                try:
+                    with db.session.begin():
+                        slot = db.session.get(Slot, sid)
+                        if not slot or slot.status != "available":
+                            # Rollback will occur automatically; inform user
+                            flash("Selected slot is no longer available. Please choose a different slot.")
+                        else:
+                            slot.appointment_id = appointment.id
+                            slot.status = "booked"
+                            db.session.add(slot)
+                except Exception:
+                    # best-effort: if transaction fails, inform user
+                    flash("Failed to reserve the selected slot. It may be taken.")
 
         return redirect(url_for("patient.booking_confirmation", appointment_id=appointment.id))
 
