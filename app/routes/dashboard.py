@@ -27,6 +27,7 @@ from app.services.queue_service import (
     start_next_consultation,
 )
 from app.models.slot import Slot
+from app.extensions import db
 
 dashboard = Blueprint("dashboard", __name__)
 
@@ -227,6 +228,31 @@ def receptionist_dashboard():
         clinic_status=clinic_status,
         booked_slots=booked_slots,
     )
+
+
+@dashboard.route("/receptionist/slots/<int:slot_id>/unbook", methods=["POST"])
+@role_required("receptionist")
+def unbook_slot(slot_id):
+    slot = db.session.get(Slot, slot_id)
+    if not slot:
+        flash("Slot not found.")
+        return redirect(url_for("dashboard.receptionist_dashboard"))
+
+    if slot.status != "booked":
+        flash("Slot is not currently booked.")
+        return redirect(url_for("dashboard.receptionist_dashboard"))
+
+    try:
+        with db.session.begin():
+            # detach appointment but keep appointment record intact
+            slot.appointment_id = None
+            slot.status = "available"
+            db.session.add(slot)
+        flash("Slot has been unbooked.")
+    except Exception:
+        flash("Failed to unbook the slot. Try again.")
+
+    return redirect(url_for("dashboard.receptionist_dashboard"))
 
 
 @dashboard.route("/receptionist/appointments")
