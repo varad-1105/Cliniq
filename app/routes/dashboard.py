@@ -26,7 +26,15 @@ from app.services.queue_service import (
     get_queue_summary,
     start_next_consultation,
 )
+from app.services.availability_service import (
+    create_availability_window,
+    update_availability_window,
+    delete_availability_window,
+    get_doctor_availabilities,
+    AvailabilityError,
+)
 from app.models.slot import Slot
+from app.models.doctor_availability import DoctorAvailability
 from app.extensions import db
 
 dashboard = Blueprint("dashboard", __name__)
@@ -230,6 +238,50 @@ def receptionist_dashboard():
     )
 
 
+@dashboard.route("/receptionist/slots/<int:slot_id>/reassign", methods=["GET", "POST"])
+@role_required("receptionist")
+def reassign_slot(slot_id):
+    slot = db.session.get(Slot, slot_id)
+    if not slot or slot.status != "booked":
+        flash("Slot not found or not booked.")
+        return redirect(url_for("dashboard.receptionist_dashboard"))
+
+    available_slots = Slot.query.filter_by(status="available").order_by(Slot.slot_date.asc(), Slot.slot_time.asc()).all()
+
+    if request.method == "POST":
+        target_slot_id = request.form.get("target_slot_id", "").strip()
+        if not target_slot_id.isdigit():
+            flash("Choose a valid target slot.")
+            return redirect(url_for("dashboard.reassign_slot", slot_id=slot.id))
+
+        target_slot = db.session.get(Slot, int(target_slot_id))
+        if not target_slot or target_slot.status != "available":
+            flash("Selected target slot is not available.")
+            return redirect(url_for("dashboard.reassign_slot", slot_id=slot.id))
+
+        try:
+            appointment_id = slot.appointment_id
+            slot.appointment_id = None
+            slot.status = "available"
+            target_slot.appointment_id = appointment_id
+            target_slot.status = "booked"
+            db.session.add(slot)
+            db.session.add(target_slot)
+            db.session.commit()
+            flash("Appointment reassigned to the selected slot.")
+            return redirect(url_for("dashboard.receptionist_dashboard"))
+        except Exception:
+            db.session.rollback()
+            flash("Failed to reassign the slot. Please try again.")
+            return redirect(url_for("dashboard.reassign_slot", slot_id=slot.id))
+
+    return render_template(
+        "reassign_slot.html",
+        slot=slot,
+        available_slots=available_slots,
+    )
+
+
 @dashboard.route("/receptionist/slots/<int:slot_id>/unbook", methods=["POST"])
 @role_required("receptionist")
 def unbook_slot(slot_id):
@@ -301,3 +353,137 @@ def add_walk_in():
         return redirect(url_for("dashboard.manage_appointments"))
 
     return render_template("add_walk_in.html")
+
+
+# Doctor Availability Window Routes
+
+@dashboard.route("/doctor/availability", methods=["GET", "POST"])
+@role_required("doctor")
+def doctor_availability():
+    """Manage doctor's availability windows."""
+    from datetime import datetime, date
+    
+    if request.method == "POST":
+        try:
+            availability_date_raw = request.form.get("availability_date", "").strip()
+            start_time_raw = request.form.get("start_time", "").strip()
+            end_time_raw = request.form.get("end_time", "").strip()
+            duration_raw = request.form.get("consultation_duration", "").strip()
+            
+            if not all([availability_date_raw, start_time_raw, end_time_raw, duration_raw]):
+                flash("All fields are required.")
+                return redirect(url_for("dashboard.doctor_availability"))
+            
+            availability_date = datetime.strptime(availability_date_raw, "%Y-%m-%d").date()
+            duration_minutes = int(duration_raw)
+            
+            create_availability_window(
+                doctor_id=current_user.id,
+                availability_date=availability_date,
+                start_time=start_time_raw,
+                end_time=end_time_raw,
+                duration_minutes=duration_minutes,
+            )
+            
+            flash(f"Availability window created for {availability_date.strftime('%B %d, %Y')}.")
+            return redirect(url_for("dashboard.doctor_availability"))
+            
+        except AvailabilityError as e:
+            flash(f"Error: {str(e)}")
+            return redirect(url_for("dashboard.doctor_availability"))
+        except (ValueError, TypeError) as e:
+            flash("Invalid input. Please check your entries.")
+            return redirect(url_for("dashboard.doctor_availability"))
+    
+    availabilities = get_doctor_availabilities(current_user.id)
+    today = date.today()
+    
+    return render_template(
+        "doctor_availability.html",
+        availabilities=availabilities,
+        today=today,
+    )
+
+
+@dashboard.route("/doctor/availability/<int:availability_id>/edit", methods=["GET", "POST"])
+@role_required("doctor")
+def edit_availability(availability_id):
+    """Edit an availability window."""
+    from datetime import datetime
+    
+    availability = db.get_or_404(DoctorAvailability, availability_id)
+    
+    if availability.doctor_id != current_user.id:
+        abort(403)
+    
+    if request.method == "POST":
+        try:
+            start_time_raw = request.form.get("start_time", "").strip()
+            end_time_raw = request.form.get("end_time", "").strip()
+            duration_raw = request.form.get("consultation_duration", "").strip()
+            is_active = request.form.get("is_active") == "on"
+            
+            if not all([start_time_raw, end_time_raw, duration_raw]):
+                flash("All fields are required.")
+                return redirect(url_for("dashboard.edit_availability", availability_id=availability_id))
+            
+            duration_minutes = int(duration_raw)
+            
+            update_availability_window(
+                availability_id=availability_id,
+                start_time=start_time_raw,
+                end_time=end_time_raw,
+                duration_minutes=duration_minutes,
+                is_active=is_active,
+            )
+            
+            flash("Availability window updated.")
+            return redirect(url_for("dashboard.doctor_availability"))
+            
+        except AvailabilityError as e:
+            flash(f"Error: {str(e)}")
+            return redirect(url_for("dashboard.edit_availability", availability_id=availability_id))
+        except (ValueError, TypeError) as e:
+            flash("Invalid input. Please check your entries.")
+            return redirect(url_for("dashboard.edit_availability", availability_id=availability_id))
+    
+    return render_template("edit_availability.html", availability=availability)
+
+
+@dashboard.route("/doctor/availability/<int:availability_id>/delete", methods=["POST"])
+@role_required("doctor")
+def delete_availability(availability_id):
+    """Delete an availability window."""
+    availability = db.get_or_404(DoctorAvailability, availability_id)
+    
+    if availability.doctor_id != current_user.id:
+        abort(403)
+    
+    try:
+        delete_availability_window(availability_id)
+        flash("Availability window deleted.")
+    except AvailabilityError as e:
+        flash(f"Error: {str(e)}")
+    
+    return redirect(url_for("dashboard.doctor_availability"))
+
+
+@dashboard.route("/doctor/availability/<int:availability_id>/toggle", methods=["POST"])
+@role_required("doctor")
+def toggle_availability(availability_id):
+    """Toggle availability window active/inactive status."""
+    availability = db.get_or_404(DoctorAvailability, availability_id)
+    
+    if availability.doctor_id != current_user.id:
+        abort(403)
+    
+    try:
+        availability.is_active = not availability.is_active
+        db.session.commit()
+        status = "activated" if availability.is_active else "deactivated"
+        flash(f"Availability window {status}.")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error: {str(e)}")
+    
+    return redirect(url_for("dashboard.doctor_availability"))

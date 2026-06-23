@@ -124,6 +124,26 @@ SESSION_COOKIE_SECURE=true
 
 For a demo deployment, SQLite is acceptable. For production healthcare use, move to a managed database and follow healthcare privacy/compliance requirements.
 
+## PostgreSQL and Migrations
+
+To use PostgreSQL, set `DATABASE_URL` in your environment, then run:
+
+```powershell
+set DATABASE_URL=postgresql://user:password@host:5432/dbname
+python run_migrations.py
+```
+
+This project also supports Alembic migrations via `run_migrations.py` and the Flask app config.
+
+## Running tests
+
+Install testing dependencies and run:
+
+```powershell
+pip install -r requirements.txt
+c:\Users\HP\Desktop\Cliniq\venv\Scripts\python.exe -m pytest -q
+```
+
 ## Screenshots
 
 Add screenshots here:

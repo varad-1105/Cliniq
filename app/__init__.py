@@ -7,6 +7,7 @@ from app.models.notification import Notification
 from app.models.prescription import Prescription, ensure_prescription_columns
 from app.models.user import User
 from app.models.slot import Slot, ensure_slot_columns
+from app.models.doctor_availability import DoctorAvailability, GeneratedSlot
 from app.routes.auth import auth
 from app.routes.dashboard import dashboard
 from app.routes.patient import patient
@@ -30,9 +31,12 @@ def ensure_demo_users():
         db.session.commit()
 
 
-def create_app():
+def create_app(test_config=None):
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    if test_config:
+        app.config.update(test_config)
 
     db.init_app(app)
     login_manager.init_app(app)

@@ -78,6 +78,7 @@
                                             <form method="post" action="{{ url_for('dashboard.unbook_slot', slot_id=slot.id) }}" style="display:inline">
                                                 <button class="btn btn-sm btn-danger" type="submit" onclick="return confirm('Unbook this slot?')">Unbook</button>
                                             </form>
+                                            <a class="btn btn-sm btn-secondary" href="{{ url_for('dashboard.reassign_slot', slot_id=slot.id) }}">Reassign</a>
                                         </td>
                                     </tr>
                                 {% endfor %}

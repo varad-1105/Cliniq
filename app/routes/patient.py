@@ -7,6 +7,7 @@ from flask import Blueprint, abort, flash, redirect, render_template, request, s
 from app.extensions import db
 from app.models.appointment import Appointment
 from app.models.prescription import Prescription
+from app.models.doctor_availability import GeneratedSlot
 from app.services.clinic_status_service import (
     get_current_clinic_status,
     is_clinic_closed,
@@ -19,6 +20,16 @@ from app.services.prescription_service import (
     get_qr_file_path,
 )
 from app.services.queue_service import get_patient_queue_status, generate_tracking_code
+from app.services.smart_allocation_service import (
+    allocate_appointment_to_slot,
+    auto_allocate_appointment,
+)
+from app.services.invoice_service import (
+    generate_appointment_invoice_pdf,
+    generate_appointment_qr,
+    get_invoice_file_path,
+    get_invoice_access_token,
+)
 
 patient = Blueprint("patient", __name__)
 
@@ -75,17 +86,16 @@ def parse_booking_form(form):
         errors.append("Reason for visit is required.")
 
     preferred_date = None
+    preferred_time = None
+    slot = None
     if slot_id_raw:
         # Slot selection overrides preferred_date/time
-        from app.models.slot import Slot
-
-        slot = db.session.get(Slot, int(slot_id_raw)) if slot_id_raw.isdigit() else None
+        slot = db.session.get(GeneratedSlot, int(slot_id_raw)) if slot_id_raw.isdigit() else None
         if not slot or slot.status != "available":
             errors.append("Selected slot is not available.")
         else:
             preferred_date = slot.slot_date
-            # preferred_time will be set later from parse_preferred_time fallback
-            # We'll return slot selection to caller via form handling.
+            preferred_time = slot.slot_time
     else:
         if not preferred_date_raw:
             errors.append("Preferred date is required.")
@@ -95,11 +105,10 @@ def parse_booking_form(form):
             except ValueError:
                 errors.append("Enter a valid preferred date.")
 
-    preferred_time = None
-    try:
-        preferred_time = parse_preferred_time(form)
-    except ValueError:
-        errors.append("Enter a valid preferred time.")
+        try:
+            preferred_time = parse_preferred_time(form)
+        except ValueError:
+            errors.append("Enter a valid preferred time.")
 
     return errors, {
         "patient_name": patient_name,
@@ -107,17 +116,27 @@ def parse_booking_form(form):
         "reason_for_visit": reason_for_visit,
         "preferred_date": preferred_date,
         "preferred_time": preferred_time,
-        "slot_id": slot_id_raw,
-    }
+    }, slot
+        except ValueError:
+            errors.append("Enter a valid preferred time.")
+
+    return errors, {
+        "patient_name": patient_name,
+        "phone_number": phone_number,
+        "reason_for_visit": reason_for_visit,
+        "preferred_date": preferred_date,
+        "preferred_time": preferred_time,
+    }, slot
 
 
 @patient.route("/book", methods=["GET", "POST"])
 def book_appointment():
     clinic_status = get_current_clinic_status()
 
-    # Provide available slots for the booking form
-    from app.models.slot import Slot
-    available_slots = Slot.query.filter_by(status="available").order_by(Slot.slot_date.asc(), Slot.slot_time.asc()).limit(50).all()
+    # Provide available generated slots for the booking form
+    available_slots = GeneratedSlot.query.filter_by(status="available").order_by(
+        GeneratedSlot.slot_date.asc(), GeneratedSlot.slot_time.asc()
+    ).limit(50).all()
 
     if request.method == "POST":
         if is_clinic_closed():
@@ -126,9 +145,10 @@ def book_appointment():
                 "book_appointment.html",
                 clinic_status=clinic_status,
                 form=request.form,
+                available_slots=available_slots,
             )
 
-        errors, booking_data = parse_booking_form(request.form)
+        errors, booking_data, selected_slot = parse_booking_form(request.form)
 
         if errors:
             for error in errors:
@@ -137,41 +157,49 @@ def book_appointment():
                 "book_appointment.html",
                 clinic_status=clinic_status,
                 form=request.form,
+                available_slots=available_slots,
             )
 
-        # Generate a unique tracking ID for secure lookup
         tracking_id = generate_tracking_code()
         appointment = Appointment(**booking_data, status="pending", tracking_id=tracking_id)
         db.session.add(appointment)
-        db.session.commit()
+        db.session.flush()
 
-        # If a slot was selected, attach it to the appointment and mark booked atomically
-        slot_id = booking_data.get("slot_id")
-        if slot_id:
-            from app.models.slot import Slot
-            try:
-                sid = int(slot_id)
-            except Exception:
-                sid = None
-
-            if sid:
-                try:
-                    with db.session.begin():
-                        slot = db.session.get(Slot, sid)
-                        if not slot or slot.status != "available":
-                            # Rollback will occur automatically; inform user
-                            flash("Selected slot is no longer available. Please choose a different slot.")
-                        else:
-                            slot.appointment_id = appointment.id
-                            slot.status = "booked"
-                            db.session.add(slot)
-                except Exception:
-                    # best-effort: if transaction fails, inform user
-                    flash("Failed to reserve the selected slot. It may be taken.")
+        try:
+            if selected_slot:
+                # Manual slot selection
+                allocate_appointment_to_slot(appointment.id, selected_slot.id)
+                appointment.appointment_source = "manual"
+            else:
+                # Auto-allocation if no slot selected
+                # For now, we'll keep it as manual without auto-allocation
+                # This can be enhanced in the future with doctor selection
+                appointment.appointment_source = "manual"
+            
+            db.session.commit()
+            
+            # Generate invoice PDF
+            generate_appointment_invoice_pdf(appointment)
+            generate_appointment_qr(appointment)
+            db.session.commit()
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Booking failed: {str(e)}")
+            return render_template(
+                "book_appointment.html",
+                clinic_status=clinic_status,
+                form=request.form,
+                available_slots=available_slots,
+            )
 
         return redirect(url_for("patient.booking_confirmation", appointment_id=appointment.id))
 
-    return render_template("book_appointment.html", clinic_status=clinic_status, available_slots=available_slots)
+    return render_template(
+        "book_appointment.html", 
+        clinic_status=clinic_status, 
+        available_slots=available_slots
+    )
 
 
 @patient.route("/booking/<int:appointment_id>/confirmation")
@@ -290,3 +318,68 @@ def appointment_history(appointment_id):
     )
 
     return render_template("patient_history.html", appointment=appointment, previous=previous)
+
+
+@patient.route("/appointments/<int:appointment_id>/invoice")
+def download_appointment_invoice(appointment_id):
+    """Download appointment invoice PDF."""
+    token = request.args.get("token", "").strip()
+    appointment = db.session.get(Appointment, appointment_id)
+
+    if not appointment:
+        abort(404)
+
+    # Verify access token if provided
+    if token:
+        invoice_token = get_invoice_access_token(appointment)
+        if not token or token != invoice_token:
+            abort(403)
+
+    # Generate invoice if it doesn't exist
+    file_path = get_invoice_file_path(appointment)
+    if not file_path or not file_path.exists():
+        generate_appointment_invoice_pdf(appointment)
+        generate_appointment_qr(appointment)
+        db.session.commit()
+
+    file_path = get_invoice_file_path(appointment)
+
+    if not file_path or not file_path.exists():
+        abort(404)
+
+    return send_file(
+        file_path,
+        mimetype="application/pdf",
+        as_attachment=False,
+        download_name=f"cliniq-appointment-{appointment.id}.pdf",
+    )
+
+
+@patient.route("/appointments/<int:appointment_id>/invoice/qr")
+def appointment_invoice_qr(appointment_id):
+    """Get QR code for appointment tracking."""
+    token = request.args.get("token", "").strip()
+    appointment = db.session.get(Appointment, appointment_id)
+
+    if not appointment:
+        abort(404)
+
+    # Verify access token if provided
+    if token:
+        invoice_token = get_invoice_access_token(appointment)
+        if not token or token != invoice_token:
+            abort(403)
+
+    # Generate QR if it doesn't exist
+    from app.services.invoice_service import get_appointment_qr_path
+    qr_path = get_appointment_qr_path(appointment)
+    if not qr_path or not qr_path.exists():
+        generate_appointment_qr(appointment)
+        db.session.commit()
+
+    qr_path = get_appointment_qr_path(appointment)
+
+    if not qr_path or not qr_path.exists():
+        abort(404)
+
+    return send_file(qr_path, mimetype="image/png")

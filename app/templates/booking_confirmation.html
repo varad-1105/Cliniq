@@ -13,6 +13,10 @@
 
             <div class="confirm-details">
                 <div class="detail-row">
+                    <span class="detail-label">Appointment ID</span>
+                    <span class="detail-value">APT-{{ "%06d"|format(appointment.id) }}</span>
+                </div>
+                <div class="detail-row">
                     <span class="detail-label">Phone</span>
                     <span class="detail-value">{{ appointment.phone_number }}</span>
                 </div>
@@ -22,7 +26,7 @@
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Preferred Date</span>
-                    <span class="detail-value">{{ appointment.preferred_date.strftime("%Y-%m-%d") }}</span>
+                    <span class="detail-value">{{ appointment.preferred_date.strftime("%A, %B %d, %Y") }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Preferred Time</span>
@@ -32,21 +36,61 @@
                     <span class="detail-label">Status</span>
                     <span class="badge badge-waiting">{{ appointment.status }}</span>
                 </div>
+                {% if appointment.token_number %}
                 <div class="detail-row">
-                    <span class="detail-label">Token</span>
-                    <span class="detail-value">{{ appointment.token_number or "Assigned after approval" }}</span>
+                    <span class="detail-label">Token Number</span>
+                    <span class="detail-value">{{ appointment.token_number }}</span>
                 </div>
+                {% endif %}
+                {% if appointment.queue_number %}
+                <div class="detail-row">
+                    <span class="detail-label">Queue Position</span>
+                    <span class="detail-value">#{{ appointment.queue_number }}</span>
+                </div>
+                {% endif %}
                 <div class="detail-row">
                     <span class="detail-label">Tracking ID</span>
                     <span class="detail-value">{{ appointment.tracking_id or "-" }}</span>
                 </div>
             </div>
 
+            <!-- Invoice Section -->
+            {% if appointment.invoice_path %}
+            <div class="alert alert-info mt-4">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <i class="fas fa-file-pdf"></i> <strong>Your appointment invoice is ready</strong>
+                    </div>
+                    <div class="col-auto">
+                        <a href="{{ url_for('patient.download_appointment_invoice', appointment_id=appointment.id) }}" 
+                           class="btn btn-sm btn-danger" target="_blank">
+                            <i class="fas fa-download"></i> Download PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="flex flex-wrap gap-3" style="justify-content:center;">
-                <a class="btn btn-primary" href="{{ url_for('patient.queue_tracker') }}">Track Queue</a>
-                <a class="btn btn-outline" href="{{ url_for('patient.book_appointment') }}">Book Another</a>
+                <a class="btn btn-primary" href="{{ url_for('patient.queue_tracker') }}">
+                    <i class="fas fa-chart-line"></i> Track Queue
+                </a>
+                {% if appointment.invoice_path %}
+                <a class="btn btn-warning" href="{{ url_for('patient.download_appointment_invoice', appointment_id=appointment.id) }}" target="_blank">
+                    <i class="fas fa-file-pdf"></i> Download Invoice
+                </a>
+                {% endif %}
+                <a class="btn btn-outline" href="{{ url_for('patient.book_appointment') }}">
+                    <i class="fas fa-plus"></i> Book Another
+                </a>
                 <a class="btn btn-ghost" href="{{ url_for('home') }}">Home</a>
-                <a class="btn btn-ghost" href="{{ url_for('patient.appointment_history', appointment_id=appointment.id) }}">View Visit History</a>
+            </div>
+
+            <div class="alert alert-warning mt-4" style="text-align: center;">
+                <strong>Important Reminders:</strong><br/>
+                • Arrive 15 minutes before your appointment<br/>
+                • Keep your Tracking ID or phone number to track your queue<br/>
+                • Contact the clinic to reschedule or cancel
             </div>
         </div>
     </div>

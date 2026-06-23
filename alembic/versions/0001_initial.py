@@ -25,11 +25,20 @@ def upgrade():
             sa.Column('slot_time', sa.Time, nullable=False),
             sa.Column('status', sa.String(20), nullable=False, server_default='available'),
             sa.Column('appointment_id', sa.Integer, nullable=True),
+            sa.Column('doctor_id', sa.Integer, nullable=True),
             sa.Column('created_at', sa.DateTime, nullable=False),
         )
     except Exception:
         # Table may already exist on older deployments
         pass
+
+    try:
+        op.add_column('slot', sa.Column('doctor_id', sa.Integer, nullable=True))
+    except Exception:
+        try:
+            conn.execute('ALTER TABLE slot ADD COLUMN doctor_id INTEGER')
+        except Exception:
+            pass
 
     # Add tracking_id column to appointment if missing
     try:

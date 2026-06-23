@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Availability - Doctor Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <h1 class="mb-4">My Availability Windows</h1>
+
+            <!-- Create New Availability Form -->
+            <div class="card card-primary mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">Create New Availability Window</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="availability_date">Date</label>
+                                    <input type="date" 
+                                           id="availability_date" 
+                                           name="availability_date" 
+                                           class="form-control" 
+                                           min="{{ today }}"
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="consultation_duration">Consultation Duration</label>
+                                    <select id="consultation_duration" 
+                                            name="consultation_duration" 
+                                            class="form-control"
+                                            required>
+                                        <option value="">Select duration...</option>
+                                        <option value="10">10 minutes</option>
+                                        <option value="15">15 minutes</option>
+                                        <option value="20">20 minutes</option>
+                                        <option value="30">30 minutes</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="start_time">Start Time</label>
+                                    <input type="time" 
+                                           id="start_time" 
+                                           name="start_time" 
+                                           class="form-control"
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="end_time">End Time</label>
+                                    <input type="time" 
+                                           id="end_time" 
+                                           name="end_time" 
+                                           class="form-control"
+                                           required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Availability Window
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Existing Availability Windows -->
+            {% if availabilities %}
+                <div class="row">
+                    {% for availability in availabilities %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card {% if not availability.is_active %}border-secondary{% endif %}">
+                            <div class="card-header {% if availability.is_active %}bg-success{% else %}bg-secondary{% endif %} text-white">
+                                <h5 class="mb-0">
+                                    {{ availability.availability_date.strftime('%A, %B %d, %Y') }}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-1">
+                                    <strong>Time:</strong> 
+                                    {{ availability.start_time.strftime('%I:%M %p') }} - {{ availability.end_time.strftime('%I:%M %p') }}
+                                </p>
+                                <p class="mb-1">
+                                    <strong>Slot Duration:</strong> {{ availability.consultation_duration_minutes }} minutes
+                                </p>
+                                <p class="mb-3">
+                                    <strong>Status:</strong> 
+                                    <span class="badge {% if availability.is_active %}badge-success{% else %}badge-secondary{% endif %}">
+                                        {% if availability.is_active %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </p>
+
+                                <!-- Slots generated from this availability -->
+                                <div class="mb-3">
+                                    <strong>Generated Slots:</strong>
+                                    <div style="max-height: 150px; overflow-y: auto;">
+                                        <div class="btn-group-vertical btn-block" role="group">
+                                            {% for slot in availability.generated_slots %}
+                                            <button type="button" class="btn btn-sm {% if slot.status == 'booked' %}btn-danger{% else %}btn-outline-success{% endif %} text-left">
+                                                {{ slot.slot_time.strftime('%I:%M %p') }}
+                                                {% if slot.status == 'booked' %}
+                                                    <span class="badge badge-danger float-right">Booked</span>
+                                                {% endif %}
+                                            </button>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="btn-group btn-block" role="group">
+                                    <a href="{{ url_for('dashboard.edit_availability', availability_id=availability.id) }}" 
+                                       class="btn btn-sm btn-warning">
+                                        <i class="fas fa-edit"></i> Edit
+                                    </a>
+                                    
+                                    <form method="POST" 
+                                          action="{{ url_for('dashboard.toggle_availability', availability_id=availability.id) }}" 
+                                          style="display: inline;">
+                                        <button type="submit" 
+                                                class="btn btn-sm {% if availability.is_active %}btn-danger{% else %}btn-success{% endif %} btn-block">
+                                            <i class="fas fa-{% if availability.is_active %}times{% else %}check{% endif %}"></i>
+                                            {% if availability.is_active %}Deactivate{% else %}Activate{% endif %}
+                                        </button>
+                                    </form>
+                                    
+                                    <form method="POST" 
+                                          action="{{ url_for('dashboard.delete_availability', availability_id=availability.id) }}" 
+                                          style="display: inline;"
+                                          onsubmit="return confirm('Are you sure? This will delete all unbooked slots.');">
+                                        <button type="submit" class="btn btn-sm btn-danger btn-block">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No availability windows created yet. Create one above to get started.
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Info Sidebar -->
+        <div class="col-lg-4">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <h5 class="mb-0">How It Works</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Step 1:</strong> Define your working hours</p>
+                    <p><strong>Step 2:</strong> Choose consultation duration</p>
+                    <p><strong>Step 3:</strong> System automatically generates slots</p>
+                    <p><strong>Step 4:</strong> Patients can book available slots</p>
+
+                    <hr />
+
+                    <h6>Example:</h6>
+                    <ul class="small">
+                        <li>Date: Jan 15, 2024</li>
+                        <li>Hours: 11:00 AM - 2:00 PM</li>
+                        <li>Duration: 15 min</li>
+                    </ul>
+                    <p class="small"><strong>Generated Slots:</strong></p>
+                    <ul class="small">
+                        <li>11:00 AM</li>
+                        <li>11:15 AM</li>
+                        <li>11:30 AM</li>
+                        <li>... and so on</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card bg-warning mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Important Notes</h5>
+                </div>
+                <div class="card-body small">
+                    <ul>
+                        <li>Overlapping time windows are not allowed</li>
+                        <li>You can edit or deactivate windows anytime</li>
+                        <li>Deleting is only allowed if no slots are booked</li>
+                        <li>Deactivate to hide availability without deleting</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
